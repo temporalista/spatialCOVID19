@@ -12,6 +12,11 @@ daniel.orelana@ucuenca.edu.ec
 
 https://www.twitter.com/temporalista
 
+![alt text](https://raw.githubusercontent.com/temporalista/spatialCOVID19/master/virus_spread_interface.png "Interface del modelo")
+
+
+
+
 ## De qué se trata?
 
 Este modelo simula la propagación espacial de un virus en dos poblaciones semi-cerradas bajo una serie de condiciones, tales como mobilidad interna, predisposición a la cuarentena, medidas personales de sanidad, etc. El modelo **no busca realizar predicciones** sino ilustrar cómo afectan los cambios de estas medidas en la propagación del virus. Es una ampliación del modelo epiDEM desarrolado por Yang, C. and Wilensky, U. (2011).
