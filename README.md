@@ -27,14 +27,12 @@ En general, el modelo permite a los usuarios:
 3) Entender el concepto de #AplanarLaCurva para evitar el colapso del sistema de salud
 4) (por desarrollar) Explorar el impacto de comportamientos de pánico en algunos comportamientos emergentes: desabastecimiento,  saturación de los hospitales, etc.
 
-## Abrir el Modelo
+## Como Usarlo?
 Para lanzar el modelo en el navegador (la simulación puede ser un poco lenta):
 
 https://temporalista.github.io/spatialCOVID19/epiDEM%20COV_v1.1.html
 
-Para mayor velocidad y funcionalidades adicionales, instalar NetLogo y abrir el archivo del modelo:
-
-
+Para mayor velocidad y funcionalidades adicionales, descargar y descomprimir el modelo (https://github.com/temporalista/spatialCOVID19/raw/master/epiDEM%20COV_v1.1.nlogo.zip) y abrirlo en NetLogo (https://ccl.northwestern.edu/netlogo/)
 
 ## Cómo Funciona?
 
