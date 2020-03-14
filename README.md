@@ -5,8 +5,11 @@ WORK IN PROGRESS
 v1.1
 
 para más información:
+
 Daniel Orellana V. Universidad de Cuenca
+
 daniel.orelana@ucuenca.edu.ec
+
 https://www.twitter.com/temporalista
 
 ## De qué se trata?
@@ -21,6 +24,7 @@ En general, el modelo permite a los usuarios:
 
 ## Abrir el Modelo
 Para lanzar el modelo en el navegador (la simulación puede ser un poco lenta):
+
 https://temporalista.github.io/spatialCOVID19/epiDEM%20COV_v1.1.html
 
 Para mayor velocidad y funcionalidades adicionales, instalar NetLogo y abrir el archivo del modelo:
