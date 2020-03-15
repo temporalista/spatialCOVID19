@@ -79,7 +79,12 @@ end
 to crear-poblacion
   set-default-shape turtles "person"
 
-  ask n-of (p1-poblacion) (patches with [pxcor < 0]) [sprout-p1s 1]
+  ;ask n-of (p1-poblacion / 4) (patches with [pxcor < (min-pxcor / 1.5)]) [sprout-p1s 1]
+  ask n-of (p1-poblacion / 4) (patches with [pxcor < (min-pxcor / 2 - 2) and pycor < (-2)]) [sprout-p1s 1]
+  ask n-of (p1-poblacion / 4) (patches with [pxcor < (min-pxcor / 1.8) and pycor > (2)]) [sprout-p1s 1]
+  ask n-of (p1-poblacion / 4) (patches with [pxcor < (0) and pxcor > (min-pxcor / 2 + 2) and pycor > (2)]) [sprout-p1s 1]
+  ask n-of (p1-poblacion / 4) (patches with [pxcor < (0) and pxcor > (min-pxcor / 2 + 2) and pycor < (-2)]) [sprout-p1s 1]
+
   ask n-of (p2-poblacion) (patches with [pxcor > 0]) [sprout-p2s 1]
 
 end
@@ -819,7 +824,7 @@ p1-mobilidad-local
 p1-mobilidad-local
 0
 1
-1.0
+0.9
 0.1
 1
 NIL
@@ -832,7 +837,7 @@ SWITCH
 193
 viajes-int?
 viajes-int?
-0
+1
 1
 -1000
 
@@ -918,7 +923,7 @@ p2-tend-cuarentena
 p2-tend-cuarentena
 0
 50
-40.0
+0.0
 5
 1
 NIL
@@ -963,7 +968,7 @@ p2-med-personales
 p2-med-personales
 0
 100
-20.0
+0.0
 5
 1
 NIL
@@ -998,7 +1003,7 @@ p2-mobilidad-local
 p2-mobilidad-local
 0
 1
-0.8
+0.5
 0.1
 1
 NIL
@@ -1218,7 +1223,7 @@ SLIDER
 por-riesgo-p2
 por-riesgo-p2
 0
-100
+20
 5.0
 1
 1
