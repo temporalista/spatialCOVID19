@@ -19,7 +19,7 @@ https://www.twitter.com/temporalista
 
 ## De qué se trata?
 
-Este modelo simula la propagación espacial de un virus en dos poblaciones semi-cerradas bajo una serie de condiciones, tales como mobilidad interna, predisposición a la cuarentena, medidas personales de sanidad, etc. El modelo **no busca realizar predicciones** sino ilustrar cómo afectan los cambios de estas medidas en la propagación del virus. Es una ampliación del modelo epiDEM desarrolado por Yang, C. and Wilensky, U. (2011).
+Este modelo simula la propagación espacial de un virus, como COVID-19 en dos poblaciones semi-cerradas bajo una serie de condiciones, tales como mobilidad interna, predisposición a la cuarentena, medidas personales de sanidad, etc. El modelo **no busca realizar predicciones** sino ilustrar cómo afectan los cambios de estas medidas en la propagación del virus. Es una ampliación del modelo epiDEM desarrolado por Yang, C. and Wilensky, U. (2011).
 
 En general, el modelo permite a los usuarios:
 1) Entender la dinámica de una enfermedad emergente como el COVID-19 en relación a medidas de control, cuarentenas, prohibición de viajes, etc.
@@ -27,7 +27,7 @@ En general, el modelo permite a los usuarios:
 3) Entender el concepto de #AplanarLaCurva para evitar el colapso del sistema de salud
 4) (por desarrollar) Explorar el impacto de comportamientos de pánico en algunos comportamientos emergentes: desabastecimiento,  saturación de los hospitales, etc.
 
-## Como Usarlo?
+## Como Iniciarlo?
 Para lanzar el modelo en el navegador (la simulación puede ser un poco lenta):
 
 https://temporalista.github.io/spatialCOVID19/epiDEM%20COV_v1.1.html
@@ -41,6 +41,14 @@ Existen dos países p1 y p2 divididos por una frontera que no se puede cruzar. L
 Una vez infectada, la persona sigue su rutina normal con probabilidad de contagiar a otras persoans, o puede auto-aislarse (tendencia-cuarentena). La infección dura en promedio un tiempo determinado (tiempo-promedio-recuperacion) luego de lo cual, cada día hay la probabilidad de curarse (probabilidad-recuperacion). Las personas pueden cambiar su comportamiento y tomar medidas personales (p-medidas-personales) como lavarse las manos, mantener distancia social, etc. Estas medidas puueden tienen un factor de eficacia (emp) que disminuye la probabilidad de contagio).
 
 Los gráficos representan entre otros datos, el número de infectados en cada país a lo largo del tiempo.
+
+
+## Instrucciones de uso
+La primera vez se puede iniciar el modelo con los parámetros por defecto. 
+
+Al hacer click en "Inicializar" se creará un mundo con dos países con una poblaciones definidas por el control *poblacion*. Además en cada país aparecerá inicialmente un número de personas infectadas (control *infectados-inicial*) que aparecerán en color rojo.
+Al hacer click en "Ejecutar" iniciará el modelo. Las personas se movilizan libremente por su país, conforme el control *movilidad-local*. Cuando una persona se encuentra con alguien infectado, tiene una probabilidad de contagiarse (control *prob-contagio*), en caso de contagiarse, su color cambia a rojo.
+
 
 
 
@@ -61,12 +69,13 @@ Los gráficos representan entre otros datos, el número de infectados en cada pa
 - El R0 se calcula para cada país de forma independiente para cada pa'is.	
 
 
+
 ## Algunas características a tomar en cuenta: 
 
 - No está modelado el supuesto de una recaida y se asume inmunidad completa luego de la recuperación.
 
 
-##Aspectos a revisar:
+## Aspectos a revisar:
 
 Potenciales colaboradores pueden enfocarse en revisar y validar algunos aspectos:
 
@@ -78,7 +87,6 @@ Potenciales colaboradores pueden enfocarse en revisar y validar algunos aspectos
 
 
 
-## Cómo Usarlo?
 
 
 
