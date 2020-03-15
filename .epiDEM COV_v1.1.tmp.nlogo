@@ -656,9 +656,9 @@ HORIZONTAL
 
 SLIDER
 140
-90
+125
 265
-123
+158
 p1-tend-cuarentena
 p1-tend-cuarentena
 0
@@ -734,10 +734,10 @@ NIL
 HORIZONTAL
 
 PLOT
-0
-540
-395
-686
+5
+635
+400
+781
 Tasas de infección y recuperación
 dias
 tasa
@@ -794,10 +794,10 @@ vinculos?
 -1000
 
 SLIDER
-440
-555
-565
-588
+140
+90
+265
+123
 p1-mobilidad-local
 p1-mobilidad-local
 0
@@ -811,7 +811,7 @@ HORIZONTAL
 SWITCH
 5
 160
-132
+135
 193
 viajes-int?
 viajes-int?
@@ -894,9 +894,9 @@ count p1s with [ infected?]
 
 SLIDER
 270
-90
+125
 395
-123
+158
 p2-tend-cuarentena
 p2-tend-cuarentena
 0
@@ -924,9 +924,9 @@ HORIZONTAL
 
 SLIDER
 140
-124
+159
 265
-157
+192
 p1-med-personales
 p1-med-personales
 0
@@ -939,9 +939,9 @@ HORIZONTAL
 
 SLIDER
 270
-124
+159
 395
-157
+192
 p2-med-personales
 p2-med-personales
 0
@@ -973,10 +973,10 @@ País 2
 1
 
 SLIDER
-570
-555
-695
-588
+270
+90
+395
+123
 p2-mobilidad-local
 p2-mobilidad-local
 0
@@ -1061,10 +1061,10 @@ r0-p2
 11
 
 PLOT
-0
-385
-395
-540
+5
+480
+400
+635
 Infectados y Recuperados (Acumulativo)
 dias
 % total pob.
