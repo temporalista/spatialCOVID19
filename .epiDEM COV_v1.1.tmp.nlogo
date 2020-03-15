@@ -607,9 +607,9 @@ days
 
 BUTTON
 140
-195
+240
 223
-228
+273
 Inicializar
 setup
 NIL
@@ -624,9 +624,9 @@ NIL
 
 BUTTON
 225
-195
+240
 315
-228
+273
 Ejecutar
 go
 T
@@ -641,9 +641,9 @@ NIL
 
 SLIDER
 140
-20
+65
 265
-53
+98
 p1-poblacion
 p1-poblacion
 50
@@ -656,9 +656,9 @@ HORIZONTAL
 
 SLIDER
 140
-90
+135
 265
-123
+168
 p1-tend-cuarentena
 p1-tend-cuarentena
 0
@@ -671,9 +671,9 @@ HORIZONTAL
 
 PLOT
 0
-230
+275
 395
-385
+430
 Poblacion infectada
 dias
 # personas
@@ -735,9 +735,9 @@ HORIZONTAL
 
 PLOT
 0
-540
+585
 395
-686
+731
 Tasas de infección y recuperación
 dias
 tasa
@@ -754,9 +754,9 @@ PENS
 
 SLIDER
 5
-20
+65
 135
-53
+98
 prob-contagio
 prob-contagio
 1
@@ -769,9 +769,9 @@ HORIZONTAL
 
 SLIDER
 5
-125
+170
 135
-158
+203
 prob-recuperacion
 prob-recuperacion
 10
@@ -795,9 +795,9 @@ vinculos?
 
 SLIDER
 140
-159
+204
 265
-192
+237
 p1-mobilidad-local
 p1-mobilidad-local
 0
@@ -810,9 +810,9 @@ HORIZONTAL
 
 SWITCH
 5
-160
+205
 132
-193
+238
 viajes-int?
 viajes-int?
 1
@@ -821,9 +821,9 @@ viajes-int?
 
 SLIDER
 5
-195
+240
 135
-228
+273
 mobilidad-internacional
 mobilidad-internacional
 0
@@ -836,9 +836,9 @@ HORIZONTAL
 
 SLIDER
 5
-90
 135
-123
+135
+168
 tiempo-prom-recuperacion
 tiempo-prom-recuperacion
 10
@@ -851,9 +851,9 @@ HORIZONTAL
 
 BUTTON
 315
-195
+240
 395
-228
+273
 1 paso
 go
 NIL
@@ -868,9 +868,9 @@ NIL
 
 SLIDER
 140
-55
+100
 265
-88
+133
 p1-infectados-inicial
 p1-infectados-inicial
 0
@@ -894,9 +894,9 @@ count p1s with [ infected?]
 
 SLIDER
 270
-90
+135
 395
-123
+168
 p2-tend-cuarentena
 p2-tend-cuarentena
 0
@@ -924,9 +924,9 @@ HORIZONTAL
 
 SLIDER
 140
-124
+169
 265
-157
+202
 p1-med-personales
 p1-med-personales
 0
@@ -939,9 +939,9 @@ HORIZONTAL
 
 SLIDER
 270
-124
+169
 395
-157
+202
 p2-med-personales
 p2-med-personales
 0
@@ -954,9 +954,9 @@ HORIZONTAL
 
 TEXTBOX
 145
-0
+45
 180
-18
+63
 País 1
 11
 52.0
@@ -964,9 +964,9 @@ País 1
 
 TEXTBOX
 275
-0
+45
 315
-18
+63
 País 2
 11
 123.0
@@ -974,9 +974,9 @@ País 2
 
 SLIDER
 270
-159
+204
 395
-192
+237
 p2-mobilidad-local
 p2-mobilidad-local
 0
@@ -1000,9 +1000,9 @@ count p2s with [infected?]
 
 SLIDER
 270
-55
+100
 395
-88
+133
 p2-infectados-inicial
 p2-infectados-inicial
 0
@@ -1025,9 +1025,9 @@ POR DESARROLLAR
 
 SLIDER
 5
-55
+100
 135
-88
+133
 efectividad-mp
 efectividad-mp
 1
@@ -1062,9 +1062,9 @@ r0-p2
 
 PLOT
 0
-385
+430
 395
-540
+585
 Infectados y Recuperados (Acumulativo)
 dias
 % total pob.
@@ -1116,9 +1116,9 @@ Muertes-P2
 
 SLIDER
 270
-20
+65
 395
-53
+98
 p2-poblacion
 p2-poblacion
 0
@@ -1131,9 +1131,9 @@ HORIZONTAL
 
 TEXTBOX
 5
-0
+45
 155
-18
+63
 Variables Globales
 12
 0.0
