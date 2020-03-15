@@ -46,10 +46,18 @@ Los gráficos representan entre otros datos, el número de infectados en cada pa
 ## Instrucciones de uso
 La primera vez se puede iniciar el modelo con los parámetros por defecto. 
 
-Al hacer click en "Inicializar" se creará un mundo con dos países con una poblaciones definidas por el control *poblacion*. Además en cada país aparecerá inicialmente un número de personas infectadas (control *infectados-inicial*) que aparecerán en color rojo.
-Al hacer click en "Ejecutar" iniciará el modelo. Las personas se movilizan libremente por su país, conforme el control *movilidad-local*. Cuando una persona se encuentra con alguien infectado, tiene una probabilidad de contagiarse (control *prob-contagio*), en caso de contagiarse, su color cambia a rojo.
+Al hacer click en "Inicializar" se creará un mundo con dos países con una poblaciones definidas por el control *poblacion*. Además en cada país aparecerá inicialmente un número de personas infectadas (control *infectados-inicial*) que aparecerán en color amarillo. Cada persona  tendrá asignado un índice que representa su estado general de salud en una escala de 0 a 10 asignada con una distribución normal (media=7, SD=2). Además, un porcentaje de la población (por-riesgo) se considerará grupo de riesgo debido a su edad o condiciones previas. 
 
+### Movilidad y contagio
+Al hacer click en "Ejecutar" iniciará el modelo. Las personas se movilizan libremente por su país en una distancia definida por el control *movilidad-local* (distribución normal, med=movilidad local, SD=movilidad local /4). Cuando una persona se encuentra con alguien infectado, tiene una probabilidad de contagiarse (control *prob-contagio*), en caso de contagiarse, su color cambia a rojo y puede a su vez contagiar a otras personas. La persona infectada permanecerá enferma durante un tiempo promedio (control *tiempo-promedio-recuperacion*), a partir del cual tendrá diariamente una probabilidad de recuperarse (control *prob-recuperacion*). Las personas que se hayan curado cambian de color a verde y se asume que son inmunes a nuevos contagios (lo cual puede cambiar para el covid-19). La simulación termina cuando no existan más personas infectadas.
 
+### Afectación a la salud
+Mientras están infectadas, el índice de salud de una persona disminuirá a una tasa de 0.5/día si pertenece a un grupo de riesgo o de 0.02/día de lo contrario. En caso de hospitalizarse, las salud de las personas del grupo de riesgo disminuirá 0.2/día y 0.01 los demás. Cuando el índice de salud baja por debajo de 2, se considera en estado crítico y su color cambia a rojo. Al llegar a 0 la persona fallece. Cuando la persona se recupera de la enfermedad, su estado de salud aumenta a razón de 0.1/día hasta llegar a 10 (o el estado inicial en futuras versiones).
+
+### Medidas de prevención
+Cada país puede tomar algunas medidas de prevención. Por ejemplo se puede restringir la movilidad local de las personas (*mobilidad-local*), solicitar a las personas que hagan cuarentena cuando presentan síntomas (*tend-cuarentena*) o implementar campañas de publicidad para que las personas adquieran comportamientos de prevención (*med-personales*).
+
+El usuario puede modificar estos valores en ambos países y comparar los resultados en una nueva simulación.
 
 
 ## Cambios con respecto a Yang, C. and Wilensky, U. (2011)
@@ -84,25 +92,17 @@ Potenciales colaboradores pueden enfocarse en revisar y validar algunos aspectos
 - Características del COVID-19. El modelo es genérico, pero es posible calibrarlo para algunas características del COVID-19: Período de incubación, período sintomático, retardo del autoaislamiento, etc.
 
 
-
-
-
-
-
-
 ## Aspectos a considerar
 
-As with many epidemiological models, the number of people becoming infected over time, in the event of an epidemic, traces out an "S-curve." It is called an S-curve because it is shaped like a sideways S. By changing the values of the parameters using the slider, try to see what kinds of changes make the S curve stretch or shrink.
-
-Whenever there's a spread of the disease that reaches most of the population, we say that there was an epidemic. The reproduction number serves as an indicator for the likeliness of an epidemic to occur, if it is greater than 1. If it is smaller than 1, then it is likely that the disease spread will stop short, and we call this an endemic.
-
-Notice how the introduction of various human behaviors, such as travel, inoculation, isolation and quarantine, help constrain the spread of the disease, and what changes that brings to the population level in terms of rate and time taken of disease spread, as well as the population affected.
 
 ## Posibles experimentos
 
 
 ## Expansión del modelo
-
+Futuras versiones incorporarán las siguientes funcionalidades:
+- Asignar rangos de edad a los agentes
+- Simular comportamientos de pánico (compras impulsivas y desabastecimiento)
+- Modelar el "respeto parcial" de la cuarentena (añadir probabilidades de  reducción del tiempo de distanciamiento social de los agentes)
 
 ## Características de los agentes
 
