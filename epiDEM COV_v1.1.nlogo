@@ -244,8 +244,10 @@ to go
     [ if infected? and not isolated? and not hospitalized?
          [ infect ] ]
 
+  ;; isolation depends on tendencia-cuarentena and infection length (when simptoms appear Backer et al., 2020)
   ask turtles
-    [ if not isolated? and not hospitalized? and infected? and (random 100 < tendencia-cuarentena)
+    [ if not isolated? and not hospitalized? and infected? and (random 100 < tendencia-cuarentena) and
+      (infection-length >= random-normal 6 2)
         [ isolate ] ]
 
   if hospitales? [
@@ -293,17 +295,16 @@ end
 
 to calcular-salud
 
-  if (infected? and not hospitalized?)
-    [ifelse riesgo?
-      [set salud salud - 0.5]
-      [set salud salud - 0.02]
+  if infected?[
+    ifelse hospitalized?[
+      ifelse riesgo?
+      [set salud salud - 0.2]    ;riesgo, hospitalizado
+      [set salud salud - 0.05]   ;no riesgo, hospitalizado
     ]
-
-
-  if (infected? and hospitalized?)
-   [ifelse riesgo?
-      [set salud salud - 0.05]
-      [set salud salud - 0.01]
+    [ifelse riesgo?
+      [set salud salud - 0.5]    ;riesgo, no hospitalizado
+      [set salud salud - 0.02]   ;riesgo, no hospitalizado
+    ]
    ]
 
   if salud <= 0 [
@@ -351,7 +352,7 @@ to move  ;; turtle procedure
         fd p1-mobilidad-local * 5  ;; ambulances move 5 times as fast than the ppl
       ]
       [
-        fd p1-mobilidad-local
+        fd random-normal p1-mobilidad-local p1-mobilidad-local / 2
       ]
     ]
 
@@ -381,7 +382,7 @@ to move  ;; turtle procedure
         fd p2-mobilidad-local * 5
       ]
       [
-        fd p2-mobilidad-local
+       fd random-normal p2-mobilidad-local p2-mobilidad-local / 2
       ]
     ]
 
@@ -678,7 +679,7 @@ SLIDER
 p1-tend-cuarentena
 p1-tend-cuarentena
 0
-100
+50
 0.0
 5
 1
@@ -777,7 +778,7 @@ prob-contagio
 prob-contagio
 1
 50
-10.0
+15.0
 1
 1
 NIL
@@ -818,7 +819,7 @@ p1-mobilidad-local
 p1-mobilidad-local
 0
 1
-0.5
+1.0
 0.1
 1
 NIL
@@ -831,7 +832,7 @@ SWITCH
 193
 viajes-int?
 viajes-int?
-1
+0
 1
 -1000
 
@@ -844,7 +845,7 @@ mobilidad-internacional
 mobilidad-internacional
 0
 1
-0.1
+0.5
 .05
 1
 NIL
@@ -916,8 +917,8 @@ SLIDER
 p2-tend-cuarentena
 p2-tend-cuarentena
 0
-100
-0.0
+50
+40.0
 5
 1
 NIL
@@ -962,7 +963,7 @@ p2-med-personales
 p2-med-personales
 0
 100
-0.0
+20.0
 5
 1
 NIL
@@ -997,7 +998,7 @@ p2-mobilidad-local
 p2-mobilidad-local
 0
 1
-0.5
+0.8
 0.1
 1
 NIL
