@@ -10,9 +10,9 @@ Daniel Orellana V. Universidad de Cuenca
 
 daniel.orelana@ucuenca.edu.ec
 
-https://www.twitter.com/temporalista
+[https://www.twitter.com/temporalista](https://www.twitter.com/temporalista)
 
-![alt text](https://raw.githubusercontent.com/temporalista/spatialCOVID19/master/virus_spread_interface.png "Interface del modelo")
+![interfaz](https://raw.githubusercontent.com/temporalista/spatialCOVID19/master/virus_spread_interface.png "Interface del modelo")
 
 
 
@@ -28,11 +28,9 @@ En general, el modelo permite a los usuarios:
 4) (por desarrollar) Explorar el impacto de comportamientos de pánico en algunos comportamientos emergentes: desabastecimiento,  saturación de los hospitales, etc.
 
 ## Como Iniciarlo?
-Para lanzar el modelo en el navegador (la simulación puede ser un poco lenta):
+Puede [lanzar el modelo directamente en el navegador](https://temporalista.github.io/spatialCOVID19/epiDEM%20COV_v1.1.html) (la simulación puede ser un poco lenta):
 
-https://temporalista.github.io/spatialCOVID19/epiDEM%20COV_v1.1.html
-
-Para mayor velocidad y funcionalidades adicionales, descargar y descomprimir el modelo (https://github.com/temporalista/spatialCOVID19/raw/master/epiDEM%20COV_v1.1.nlogo.zip) y abrirlo en NetLogo (https://ccl.northwestern.edu/netlogo/)
+Para mayor velocidad y funcionalidades adicionales, [descargar](https://github.com/temporalista/spatialCOVID19/raw/master/epiDEM%20COV_v1.1.nlogo.zip) y descomprimir el modelo  y abrirlo en [NetLogo](https://ccl.northwestern.edu/netlogo/)
 
 ## Cómo Funciona?
 
