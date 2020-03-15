@@ -16,6 +16,8 @@ globals
   r0-p2
   muertes-p1
   muertes-p2
+  ;por-riesgo-p1               ;percent of people in a risk group (senior, diabetes, heart condition, etc.)
+  ;por-riesgo-p2
 ]
 
 turtles-own
@@ -36,6 +38,7 @@ turtles-own
   nb-infected          ;; Number of secondary infections caused by an infected person at the end of the tick
   nb-recovered         ;; Number of recovered people at the end of the tick
   salud                ;; Estado de salud de la persona
+  riesgo?               ;; está en un grupo de riesgo
 
 
 ]
@@ -67,6 +70,7 @@ to setup-globals
 
   set border patches with [(pxcor =  0 and abs (pycor) >= 0)]
   ask border [ set pcolor white ]
+
 end
 
 ;; Create poblacion number of people.
@@ -89,10 +93,12 @@ to setup-people
     set ambulance? false
     set infected? false
     set susceptible? true
+    set riesgo? false
     set f-medidas-personales 1
-    set salud random-normal 7 3
+    set salud random-normal 7 2
+    if salud <= 0 [set salud 1]
 
-      set size 1
+    set size 1
 
       ]
 
@@ -158,6 +164,7 @@ to assign-tendency ;; Turtle procedure
     if (random-float 100 < p1-med-personales) [ set f-medidas-personales (1 / efectividad-mp)]
     set tendencia-cuarentena random-normal p1-tend-cuarentena (p1-tend-cuarentena / 4)
     set tendencia-hospitalizacion random-normal p1-tendencia-hospitalizacion (p1-tendencia-hospitalizacion / 4)
+    if (random-float 100 < por-riesgo-p1) [ set riesgo? true]
       ]
 
 
@@ -165,6 +172,7 @@ to assign-tendency ;; Turtle procedure
     if (random-float 100 < p2-med-personales) [ set f-medidas-personales (1 / efectividad-mp)]
     set tendencia-cuarentena random-normal P2-tend-cuarentena (P2-tend-cuarentena / 4)
     set tendencia-hospitalizacion random-normal p2-tendencia-hospitalizacion (p2-tendencia-hospitalizacion / 4)
+    if (random-float 100 < por-riesgo-p1) [ set riesgo? true]
       ]
 
   ask turtles [
@@ -198,10 +206,14 @@ to assign-color ;; turtle procedure
     [ ifelse inoculated?
       [ set color blue ]
       [ ifelse infected?
-        [set color red ]
+        [set color yellow
+        if salud < 2 [ set color red ]
+      ]
         [set color white]]]
-  if ambulance?
-    [ set color yellow ]
+  ;if ambulance?
+  ;[ set color yellow ]
+
+
 end
 
 
@@ -267,38 +279,46 @@ to go
         [ unisolate ] ]
 
   ask turtles
+  [ calcular-salud]
+
+    ask turtles
     [ assign-color
       calculate-r0
       calculate-r0-p1
       calculate-r0-p2
   ]
 
-  ask turtles
-  [ if (infected? and not hospitalized?)
-    [set salud salud - 0.05]
-    if salud <= 0 [
+  tick
+end
+
+to calcular-salud
+
+  if (infected? and not hospitalized?)
+    [ifelse riesgo?
+      [set salud salud - 0.5]
+      [set salud salud - 0.02]
+    ]
+
+
+  if (infected? and hospitalized?)
+
+  [ifelse riesgo?
+[set salud salud - 0.05]
+      [set salud salud - 0.01]
+    ]
+
+
+
+if salud <= 0 [
       if breed = p1s [set muertes-p1 (muertes-p1  + 1)]
       if breed = p2s [set muertes-p2 (muertes-p2  + 1)]
       die
     ]
-  ]
 
-  ask turtles
-  [ if (infected? and hospitalized?)
-    [set salud salud - 0.01]
-    if salud <= 0 [
-      if breed = p1s [set muertes-p1 muertes-p1  + 1]
-      if breed = p2s [set muertes-p2 muertes-p2  + 1]
-      die
-    ]
-  ]
 
-  ask turtles
-  [ if (cured? and salud < 10)
+  if (cured? and salud < 10)
     [set salud salud + 0.1]
-  ]
 
-  tick
 end
 
 
@@ -422,7 +442,7 @@ to unisolate  ;; turtle procedure
 
   ask (patch-at 0 0) [ set pcolor black ]
 
-  ask border [ set pcolor yellow ]                      ;; patches on the border stay yellow
+  ask border [ set pcolor white ]                      ;; patches on the border stay yellow
   ask (patch-set patches with [plabel = "H"]) [ set pcolor blue ]  ;; hospital patch on the left stays white
   ;ask (patch (max-pxcor / 2) 0) [ set pcolor blue ]    ;; hospital patch on the right stays white
 end
@@ -607,9 +627,9 @@ days
 
 BUTTON
 140
-195
+230
 223
-228
+263
 Inicializar
 setup
 NIL
@@ -624,9 +644,9 @@ NIL
 
 BUTTON
 225
-195
+230
 315
-228
+263
 Ejecutar
 go
 T
@@ -656,13 +676,13 @@ HORIZONTAL
 
 SLIDER
 140
-125
+160
 265
-158
+193
 p1-tend-cuarentena
 p1-tend-cuarentena
 0
-50
+100
 0.0
 5
 1
@@ -671,9 +691,9 @@ HORIZONTAL
 
 PLOT
 0
-230
+270
 395
-385
+475
 Poblacion infectada
 dias
 # personas
@@ -734,10 +754,10 @@ NIL
 HORIZONTAL
 
 PLOT
-5
-635
-400
-781
+670
+640
+950
+786
 Tasas de infección y recuperación
 dias
 tasa
@@ -795,14 +815,14 @@ vinculos?
 
 SLIDER
 140
-90
+125
 265
-123
+158
 p1-mobilidad-local
 p1-mobilidad-local
 0
 1
-1.0
+0.5
 0.1
 1
 NIL
@@ -843,17 +863,17 @@ tiempo-prom-recuperacion
 tiempo-prom-recuperacion
 10
 60
-20.0
-10
+30.0
+5
 1
 NIL
 HORIZONTAL
 
 BUTTON
 315
-195
+230
 395
-228
+263
 1 paso
 go
 NIL
@@ -868,9 +888,9 @@ NIL
 
 SLIDER
 140
-55
+90
 265
-88
+123
 p1-infectados-inicial
 p1-infectados-inicial
 0
@@ -894,15 +914,15 @@ count p1s with [ infected?]
 
 SLIDER
 270
-125
+160
 395
-158
+193
 p2-tend-cuarentena
 p2-tend-cuarentena
 0
-50
-5.0
-1
+100
+0.0
+5
 1
 NIL
 HORIZONTAL
@@ -924,30 +944,30 @@ HORIZONTAL
 
 SLIDER
 140
-159
+194
 265
-192
+227
 p1-med-personales
 p1-med-personales
 0
 100
 0.0
-1
+15
 1
 NIL
 HORIZONTAL
 
 SLIDER
 270
-159
+194
 395
-192
+227
 p2-med-personales
 p2-med-personales
 0
 100
-30.0
-1
+0.0
+5
 1
 NIL
 HORIZONTAL
@@ -974,14 +994,14 @@ País 2
 
 SLIDER
 270
-90
+125
 395
-123
+158
 p2-mobilidad-local
 p2-mobilidad-local
 0
 1
-0.7
+0.5
 0.1
 1
 NIL
@@ -1000,9 +1020,9 @@ count p2s with [infected?]
 
 SLIDER
 270
-55
+90
 395
-88
+123
 p2-infectados-inicial
 p2-infectados-inicial
 0
@@ -1061,10 +1081,10 @@ r0-p2
 11
 
 PLOT
-5
-480
-400
-635
+395
+640
+670
+785
 Infectados y Recuperados (Acumulativo)
 dias
 % total pob.
@@ -1150,14 +1170,85 @@ País 1
 1
 
 TEXTBOX
-700
+690
 480
-770
+760
 498
 País 2
 14
 122.0
 1
+
+PLOT
+0
+475
+395
+625
+Histograma Estado de salud de la Población
+NIL
+NIL
+0.0
+10.0
+0.0
+50.0
+false
+true
+"set-current-plot-pen \"p1\"\nset-plot-pen-mode 1\nset-histogram-num-bars 10\n\n\nset-current-plot-pen \"p2\"\nset-plot-pen-mode 1\nset-histogram-num-bars 10\n" ""
+PENS
+"p1" 1.0 0 -14333415 true "" "histogram [salud] of p1s"
+"p2" 1.0 0 -10022847 true "" "histogram [salud] of p2s"
+
+SLIDER
+140
+55
+265
+88
+por-riesgo-p1
+por-riesgo-p1
+0
+20
+5.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+270
+55
+395
+88
+por-riesgo-p2
+por-riesgo-p2
+0
+100
+5.0
+1
+1
+NIL
+HORIZONTAL
+
+MONITOR
+450
+475
+507
+520
+Pob
+count p1s
+0
+1
+11
+
+MONITOR
+732
+475
+782
+520
+pob
+count p2s
+0
+1
+11
 
 @#$#@#$#@
 # Dispersión espacial y prevención COVID 19 
