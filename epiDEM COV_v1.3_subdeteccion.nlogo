@@ -16,6 +16,7 @@ globals
   r0-p2
   muertes-p1
   muertes-p2
+  incubation-time
   ;por-riesgo-p1               ;percent of people in a risk group (senior, diabetes, heart condition, etc.)
   ;por-riesgo-p2
 ]
@@ -24,12 +25,11 @@ turtles-own
 [
   infected?            ;; If true, the person is infected.
   cured?               ;; If true, the person has lived through an infection. They cannot be re-infected.
-  inoculated?          ;; If true, the person has been inoculated.
   isolated?            ;; If true, the person is isolated, unable to infect anyone.
   hospitalized?        ;; If true, the person is hospitalized and will recovery in half the tiempo-prom-recuperacion.
   infection-length     ;; How long the person has been infected.
   recovery-time        ;; Time (in hours) it takes before the person has a chance to recover from the infection
-  tendencia-aislamiento   ;; Chance the person will self-quarantine during any day being infected.
+  por-deteccion   ;; Chance the person will self-quarantine during any day being infected.
   tendencia-hospitalizacion ;; Chance that an infected person will go to the hospital when infected
   f-medidas-personales   ;; factor de contagio si la persona toma medidas personales de precaución
   continent            ;; Which continent a person lives one, people on continent 1 are squares, people on continent 2 are circles.
@@ -39,6 +39,7 @@ turtles-own
   nb-recovered         ;; Number of recovered people at the end of the tick
   salud                ;; Estado de salud de la persona
   riesgo?               ;; está en un grupo de riesgo
+  detected?            ;; diagnosed
 
 
 ]
@@ -71,6 +72,8 @@ to setup-globals
   set border patches with [(pxcor =  0 and abs (pycor) >= 0)]
   ask border [ set pcolor white ]
 
+  set incubation-time 5.5  ;Baum et al.https://www.jwatch.org/na51083/2020/03/13/covid-19-incubation-period-update
+
 end
 
 ;; Create poblacion number of people.
@@ -94,6 +97,7 @@ to setup-people
     set infected? false
     set susceptible? true
     set riesgo? false
+    set detected? false
     set f-medidas-personales 1
     set salud random-normal 7 2
     if salud <= 0 [set salud 1]
@@ -109,70 +113,41 @@ end
 
 to infeccion-inicial
   ask n-of p1-infectados-inicial p1s
-    [ set infected? true
-      set susceptible? false
-      set infection-length random recovery-time
-    ]
+  [ set infected? true
+    set susceptible? false
+    set infection-length random recovery-time
+    if random-float 100 < por-deteccion [set detected? true]
+  ]
 
-    ask n-of p2-infectados-inicial p2s
-    [ set infected? true
-      set susceptible? false
-      set infection-length random recovery-time
-    ]
+  ask n-of p2-infectados-inicial p2s
+  [ set infected? true
+    set susceptible? false
+    set infection-length random recovery-time
+    if random-float 100 < por-deteccion [set detected? true]
+  ]
 
   ask turtles [
-        ifelse (not infected?) and (random-float 100 < probabilidad-vacuna)
-        [ set inoculated? true
-          set susceptible? false ]
-        [ set inoculated? false ]
-
-      assign-color
+    assign-color
   ]
 
 end
 
-;to setup-ambulance
-;  create-turtles ambulancias
-;  [
-;    ifelse random 2 < 1
-;    [
-;      set continent 1
-;      setxy (- max-pxcor / 2) 0
-;    ]
-;    [
-;      set continent 2
-;      setxy (max-pxcor / 2) 0
-;    ]
-;
-;    set cured? false
-;    set isolated? false
-;    set hospitalized? false
-;    set infected? false
-;    set inoculated? false
-;    set susceptible? false
-;
-;    set ambulance? true
-;
-;    set shape "person"
-;    set color yellow
-;  ]
-;end
 
 to assign-tendency ;; Turtle procedure
 
   ask p1s [
     if (random-float 100 < p1-med-personales) [ set f-medidas-personales (1 / efectividad-mp)]
-    set tendencia-aislamiento random-normal p1-tend-aislamiento (p1-tend-aislamiento / 4)
     set tendencia-hospitalizacion random-normal p1-tendencia-hospitalizacion (p1-tendencia-hospitalizacion / 4)
     if (random-float 100 < por-riesgo-p1) [ set riesgo? true]
+    set por-deteccion p1-por-deteccion
       ]
 
 
     ask p2s [
     if (random-float 100 < p2-med-personales) [ set f-medidas-personales (1 / efectividad-mp)]
-    set tendencia-aislamiento random-normal P2-tend-aislamiento (P2-tend-aislamiento / 4)
     set tendencia-hospitalizacion random-normal p2-tendencia-hospitalizacion (p2-tendencia-hospitalizacion / 4)
     if (random-float 100 < por-riesgo-p1) [ set riesgo? true]
+    set por-deteccion p2-por-deteccion
       ]
 
   ask turtles [
@@ -183,8 +158,6 @@ to assign-tendency ;; Turtle procedure
   if recovery-time < 0 [ set recovery-time 0 ]
 
   ;; Similarly for isolation and hospital going tendencies
-  if tendencia-aislamiento > tendencia-aislamiento * 2 [ set tendencia-aislamiento (tendencia-aislamiento * 2) ]
-  if tendencia-aislamiento < 0 [ set tendencia-aislamiento 0 ]
 
   if tendencia-hospitalizacion > tendencia-hospitalizacion * 2 [ set tendencia-hospitalizacion (tendencia-hospitalizacion * 2) ]
   if tendencia-hospitalizacion < 0 [ set tendencia-hospitalizacion 0 ]
@@ -202,16 +175,14 @@ end
 to assign-color ;; turtle procedure
 
   ifelse cured?
-    [ set color green ]
-    [ ifelse inoculated?
-      [ set color blue ]
-      [ ifelse infected?
-        [set color yellow
-        if salud < 2 [ set color red ]
-      ]
-        [set color white]]]
-  ;if ambulance?
-  ;[ set color yellow ]
+  [ set color green ]
+  [ ifelse infected?
+    [set color yellow
+      if salud < 2 [ set color red ]
+      if detected? [set color blue]
+    ]
+    [set color white]]
+
 
 
 end
@@ -244,10 +215,12 @@ to go
     [ if infected? and not isolated? and not hospitalized?
          [ infect ] ]
 
-  ;; isolation depends on tendencia-aislamiento and infection length (when simptoms appear Backer et al., 2020)
+  ;; isolation depends on por-deteccion and infection length (when simptoms appear Backer et al., 2020)
   ask turtles
-    [ if not isolated? and not hospitalized? and infected? and (random 100 < tendencia-aislamiento) and
-      (infection-length >= random-normal 6 2)
+    [ if not isolated? and not hospitalized?
+      and (infection-length >= random-normal incubation-time incubation-time / 2 )
+      and infected?
+      and detected?
         [ isolate ] ]
 
   if hospitales? [
@@ -256,20 +229,6 @@ to go
       [ hospitalize ]
     ]
   ]
-
-
-;  ask turtles
-;  [
-;    if ambulance?
-;    [
-;      move
-;      ask turtles-on neighbors
-;      [
-;        if (ambulance? = false) and (infected? = true)
-;        [ hospitalize ]
-;      ]
-;    ]
-;  ]
 
   ask turtles
     [ if infected?
@@ -397,32 +356,43 @@ end
 to maybe-recover
   set infection-length infection-length + 1
 
-      ;; If people have been infected for more than the recovery-time
-      ;; then there is a chance for recovery
-      ifelse not hospitalized?
+  ;; If people have been infected for more than the recovery-time
+  ;; then there is a chance for recovery
+  ifelse not hospitalized?
+  [ ifelse salud < 4
+    [        if infection-length > recovery-time * 2 ; severe and critical cases twice recovery time
       [
-        if infection-length > recovery-time
+        if random-float 100 < (prob-recuperacion)
         [
-          if random-float 100 < prob-recuperacion
-          [
-            set infected? false
-            set cured? true
-            set nb-recovered (nb-recovered + 1)
-          ]
+          set infected? false
+          set cured? true
+          set nb-recovered (nb-recovered + 1)
         ]
       ]
+    ]
+    [if infection-length > recovery-time
+      [
+        if random-float 100 < prob-recuperacion
+        [
+          set infected? false
+          set cured? true
+          set nb-recovered (nb-recovered + 1)
+        ]
+      ]
+    ]
+  ]
 
-      [ ;; If hospitalized, recover in a half of the recovery time
-        if infection-length > (recovery-time / 1)
-        [
-          if random-float 100 < prob-recuperacion
-          [
-            set infected? false
-            set cured? true
-            set nb-recovered (nb-recovered + 1)
-          ]
-        ]
+  [ ;; If hospitalized, recover in a half of the recovery time
+    if infection-length > (recovery-time / 2)
+    [
+      if random-float 100 < prob-recuperacion
+      [
+        set infected? false
+        set cured? true
+        set nb-recovered (nb-recovered + 1)
       ]
+    ]
+  ]
 end
 
 ;; To better show that isolation has occurred, the patch below the person turns gray
@@ -463,32 +433,33 @@ end
 
 to infect  ;; turtle procedure
 
-    let caller self
+  let caller self
 
-    let nearby-uninfected (turtles-on neighbors)
-    with [ not infected? and not cured? and not inoculated? ]
-    if nearby-uninfected != nobody
+  let nearby-uninfected (turtles-on neighbors) with [ not infected? and not cured?]
+  if nearby-uninfected != nobody
+  [
+    ask nearby-uninfected
     [
-       ask nearby-uninfected
-       [
-           ifelse link-neighbor? caller
-           [
-             if random 100 < prob-contagio * f-medidas-personales * 2 ;; twice as likely to infect a linked person
-             [
-               set infected? true
-               set nb-infected (nb-infected + 1)
-             ]
-           ]
-           [
-             if random 100 < prob-contagio * f-medidas-personales
-             [
-               set infected? true
-               set nb-infected (nb-infected + 1)
-             ]
-           ]
-       ]
-
+      ifelse link-neighbor? caller ;; twice as likely to infect a linked person
+      [
+        if random 100 < prob-contagio * f-medidas-personales * 2
+        [
+          set infected? true
+          if random-float 100 < por-deteccion [set detected? true]
+          set nb-infected (nb-infected + 1)
+        ]
+      ]
+      [
+        if random 100 < prob-contagio * f-medidas-personales
+        [
+          set infected? true
+          if random-float 100 < por-deteccion [set detected? true]
+          set nb-infected (nb-infected + 1)
+        ]
+      ]
     ]
+
+  ]
 
 end
 
@@ -663,9 +634,9 @@ SLIDER
 53
 p1-poblacion
 p1-poblacion
-50
+1
 500
-300.0
+1.0
 10
 1
 NIL
@@ -676,8 +647,8 @@ SLIDER
 160
 265
 193
-p1-tend-aislamiento
-p1-tend-aislamiento
+p1-por-deteccion
+p1-por-deteccion
 0
 50
 0.0
@@ -688,9 +659,9 @@ HORIZONTAL
 
 PLOT
 0
-270
+265
 395
-475
+405
 Poblacion infectada
 dias
 # personas
@@ -751,10 +722,10 @@ NIL
 HORIZONTAL
 
 PLOT
-670
-640
-950
-786
+685
+635
+965
+785
 Tasas de infección y recuperación
 dias
 tasa
@@ -792,9 +763,9 @@ SLIDER
 prob-recuperacion
 prob-recuperacion
 10
-100
+50
 10.0
-5
+1
 1
 NIL
 HORIZONTAL
@@ -860,7 +831,7 @@ tiempo-prom-recuperacion
 tiempo-prom-recuperacion
 10
 60
-30.0
+16.0
 5
 1
 NIL
@@ -892,7 +863,7 @@ p1-infectados-inicial
 p1-infectados-inicial
 0
 10
-5.0
+0.0
 1
 1
 NIL
@@ -914,11 +885,11 @@ SLIDER
 160
 395
 193
-p2-tend-aislamiento
-p2-tend-aislamiento
+p2-por-deteccion
+p2-por-deteccion
 0
-50
-2.0
+100
+10.0
 1
 1
 NIL
@@ -948,8 +919,8 @@ p1-med-personales
 p1-med-personales
 0
 100
-0.0
-15
+50.0
+5
 1
 NIL
 HORIZONTAL
@@ -963,7 +934,7 @@ p2-med-personales
 p2-med-personales
 0
 100
-0.0
+50.0
 5
 1
 NIL
@@ -998,7 +969,7 @@ p2-mobilidad-local
 p2-mobilidad-local
 0
 1
-0.7
+0.8
 0.1
 1
 NIL
@@ -1049,7 +1020,7 @@ efectividad-mp
 efectividad-mp
 1
 10
-3.0
+2.0
 1
 1
 NIL
@@ -1078,10 +1049,10 @@ r0-p2
 11
 
 PLOT
+0
+405
 395
-640
-670
-785
+555
 Infectados y Recuperados (Acumulativo)
 dias
 % total pob.
@@ -1140,7 +1111,7 @@ p2-poblacion
 p2-poblacion
 0
 500
-300.0
+500.0
 10
 1
 NIL
@@ -1177,10 +1148,10 @@ País 2
 1
 
 PLOT
-0
-475
-395
-625
+425
+635
+685
+785
 Histograma Estado de salud de la Población
 NIL
 NIL
@@ -1252,11 +1223,32 @@ MONITOR
 520
 845
 565
-aislados
-count p2s with [isolated?]
+Detectados
+count p2s with [detected?]
 0
 1
 11
+
+MONITOR
+505
+520
+570
+565
+Detectados
+count p1s with [detected?]
+0
+1
+11
+
+TEXTBOX
+585
+530
+800
+626
+Blanco = Sanos\nAmarillo = Contagiados no detectados\nAzul = Contagiados detectados\nRojo = Estado crítico\nVerde = Curado
+11
+0.0
+1
 
 @#$#@#$#@
 # Dispersión espacial y prevención COVID 19 
@@ -1704,6 +1696,17 @@ NetLogo 6.1.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="experiment deteccion 10 80" repetitions="100" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count p2s with [ infected?]</metric>
+    <metric>count p2s with [ cured? ]</metric>
+    <metric>muertes-p2</metric>
+    <steppedValueSet variable="p2-por-deteccion" first="5" step="5" last="80"/>
+    <steppedValueSet variable="p2-mobilidad-local" first="0.5" step="0.1" last="1"/>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
