@@ -85,7 +85,11 @@ to crear-poblacion
   ask n-of (p1-poblacion / 4) (patches with [pxcor < (0) and pxcor > (min-pxcor / 2 + 2) and pycor > (2)]) [sprout-p1s 1]
   ask n-of (p1-poblacion / 4) (patches with [pxcor < (0) and pxcor > (min-pxcor / 2 + 2) and pycor < (-2)]) [sprout-p1s 1]
 
-  ask n-of (p2-poblacion) (patches with [pxcor > 0]) [sprout-p2s 1]
+  ;ask n-of (p2-poblacion) (patches with [pxcor > 0]) [sprout-p2s 1]
+  ask n-of (p2-poblacion / 4) (patches with [pxcor > (max-pxcor / 2 + 2) and pycor > (2)]) [sprout-p2s 1]
+  ask n-of (p2-poblacion / 4) (patches with [pxcor > (max-pxcor / 1.8) and pycor < (-2)]) [sprout-p2s 1]
+  ask n-of (p2-poblacion / 4) (patches with [pxcor > (0) and pxcor < (max-pxcor / 2 - 2) and pycor > (2)]) [sprout-p2s 1]
+  ask n-of (p2-poblacion / 4) (patches with [pxcor > (0) and pxcor < (max-pxcor / 2 - 2) and pycor < (-2)]) [sprout-p2s 1]
 
 end
 to setup-people
@@ -603,11 +607,11 @@ end
 GRAPHICS-WINDOW
 405
 10
-958
-474
+1013
+520
 -1
 -1
-8.93443
+9.84
 1
 10
 1
@@ -824,7 +828,7 @@ p1-mobilidad-local
 p1-mobilidad-local
 0
 1
-0.9
+0.3
 0.1
 1
 NIL
@@ -904,10 +908,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-505
-475
-570
+515
 520
+580
+565
 Infectados
 count p1s with [ infected?]
 0
@@ -1003,17 +1007,17 @@ p2-mobilidad-local
 p2-mobilidad-local
 0
 1
-0.5
+0.7
 0.1
 1
 NIL
 HORIZONTAL
 
 MONITOR
-780
-475
-845
+790
 520
+855
+565
 Infectados
 count p2s with [infected?]
 0
@@ -1061,10 +1065,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-630
-475
-680
+640
 520
+690
+565
 R0 P1
 r0-p1
 2
@@ -1072,10 +1076,10 @@ r0-p1
 11
 
 MONITOR
-905
-475
-955
+915
 520
+975
+565
 R0 P2
 r0-p2
 2
@@ -1115,10 +1119,10 @@ hospitales?
 -1000
 
 MONITOR
-570
-475
-630
+580
 520
+640
+565
 Fallecidos
 muertes-p1
 0
@@ -1126,10 +1130,10 @@ muertes-p1
 11
 
 MONITOR
-845
-475
-905
+855
 520
+915
+565
 Fallecidos
 Muertes-P2
 0
@@ -1162,20 +1166,20 @@ Variables Globales
 1
 
 TEXTBOX
-410
-480
-490
-498
+420
+525
+500
+543
 País 1
 14
 52.0
 1
 
 TEXTBOX
-690
-480
-760
-498
+700
+525
+770
+543
 País 2
 14
 122.0
@@ -1231,10 +1235,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-450
-475
-507
+460
 520
+517
+565
 Pob
 count p1s
 0
@@ -1242,10 +1246,10 @@ count p1s
 11
 
 MONITOR
-732
-475
-782
+742
 520
+792
+565
 pob
 count p2s
 0

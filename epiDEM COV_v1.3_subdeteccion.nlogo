@@ -45,7 +45,7 @@ turtles-own
 ]
 
 breed [p1s p1]
-breed [p2s p2]
+;breed [p2s p2]
 
 
 
@@ -64,13 +64,11 @@ to setup
 end
 
 to setup-globals
+  ask patches [set pcolor white]
   if hospitales? [
   ask patch (- max-pxcor / 2 ) max-pycor [ set pcolor blue set plabel "H"]
   ask patch (max-pxcor / 2 ) max-pycor [ set pcolor blue set plabel "H"]
   ]
-
-  set border patches with [(pxcor =  0 and abs (pycor) >= 0)]
-  ask border [ set pcolor white ]
 
   set incubation-time 5.5  ;Baum et al.https://www.jwatch.org/na51083/2020/03/13/covid-19-incubation-period-update
 
@@ -80,10 +78,9 @@ end
 ;; Those that live on the left are squares; those on the right, circles.
 
 to crear-poblacion
-  set-default-shape turtles "person"
+  set-default-shape turtles "circle"
 
-  ask n-of (p1-poblacion) (patches with [pxcor < 0]) [sprout-p1s 1]
-  ask n-of (p2-poblacion) (patches with [pxcor > 0]) [sprout-p2s 1]
+  ask n-of (p1-poblacion) (patches) [sprout-p1s 1]
 
 end
 to setup-people
@@ -102,7 +99,7 @@ to setup-people
     set salud random-normal 7 2
     if salud <= 0 [set salud 1]
 
-    set size 1
+    set size 0.7
 
       ]
 
@@ -119,12 +116,6 @@ to infeccion-inicial
     if random-float 100 < por-deteccion [set detected? true]
   ]
 
-  ask n-of p2-infectados-inicial p2s
-  [ set infected? true
-    set susceptible? false
-    set infection-length random recovery-time
-    if random-float 100 < por-deteccion [set detected? true]
-  ]
 
   ask turtles [
     assign-color
@@ -142,13 +133,6 @@ to assign-tendency ;; Turtle procedure
     set por-deteccion p1-por-deteccion
       ]
 
-
-    ask p2s [
-    if (random-float 100 < p2-med-personales) [ set f-medidas-personales (1 / efectividad-mp)]
-    set tendencia-hospitalizacion random-normal p2-tendencia-hospitalizacion (p2-tendencia-hospitalizacion / 4)
-    if (random-float 100 < por-riesgo-p1) [ set riesgo? true]
-    set por-deteccion p2-por-deteccion
-      ]
 
   ask turtles [
   set recovery-time random-normal tiempo-prom-recuperacion (tiempo-prom-recuperacion / 4)
@@ -177,11 +161,11 @@ to assign-color ;; turtle procedure
   ifelse cured?
   [ set color green ]
   [ ifelse infected?
-    [set color yellow
+    [set color 114
       if salud < 2 [ set color red ]
       if detected? [set color blue]
     ]
-    [set color white]]
+    [set color 86]]
 
 
 
@@ -246,7 +230,6 @@ to go
     [ assign-color
       calculate-r0
       calculate-r0-p1
-      calculate-r0-p2
   ]
 
   tick
@@ -267,8 +250,7 @@ to calcular-salud
    ]
 
   if salud <= 0 [
-    if breed = p1s [set muertes-p1 (muertes-p1  + 1)]
-    if breed = p2s [set muertes-p2 (muertes-p2  + 1)]
+    set muertes-p1 (muertes-p1  + 1)
     die
   ]
 
@@ -279,73 +261,13 @@ end
 
 
 to move  ;; turtle procedure
-  if viajes-int?
-  [
-    if random 1000 < (mobilidad-internacional) and not ambulance?  ;; up to 1% chance of travel
-    [ set xcor (- xcor) ]
-  ]
 
-  ifelse breed = p1s
-  [
-    ifelse xcor > (- 2)  ;; and near border patch
-    [
-      set angle random-float 180
-      let new-patch patch-at-heading-and-distance angle (-1)
-      if new-patch != nobody
-      [
-        move-to new-patch
-      ]
-    ]
-    [ ;; if in continent 1 and not on border
-      ifelse xcor < (min-pxcor + 0.5)  ;; at the edge of world
-      [
-        set angle random-normal 180 10
-      ]
-      [
-        set angle random-normal 0 90  ;; inside world
-      ]
-      rt angle
-
-      ifelse ambulance?
-      [
-        fd p1-mobilidad-local * 5  ;; ambulances move 5 times as fast than the ppl
-      ]
-      [
-        fd random-normal p1-mobilidad-local p1-mobilidad-local / 2
-      ]
-    ]
-
-  ]
-  [ ;; in continent 2
-    ifelse xcor < 2  ;; and on border patch
-    [
-      set angle random-float 180
-      let new-patch patch-at-heading-and-distance angle (1)
-      if new-patch != nobody
-      [
-        move-to new-patch
-      ]
-    ]
-    [ ;; if in continent 2 and not on border
-      ifelse xcor > (max-pxcor - 1) ;; at the edge of world
-      [
-        set angle random-float 180
-      ]
-      [
-        set angle random-normal 0 90
-      ]
-      lt angle
-
-      ifelse ambulance?
-      [
-        fd p2-mobilidad-local * 5
-      ]
-      [
-       fd random-normal p2-mobilidad-local p2-mobilidad-local / 2
-      ]
-    ]
-
-  ]
+;      ifelse xcor < (min-pxcor + 0.5)  ;; at the edge of world
+;      [
+;        set angle random-normal 180 10
+;      ]
+      rt random-normal 0 180
+      fd random-normal p1-mobilidad-local p1-mobilidad-local / 4
 end
 
 to clear-count
@@ -399,7 +321,7 @@ end
 to isolate ;; turtle procedure
   set isolated? true
   move-to patch-here ;; move to center of patch
-  ask (patch-at 0 0) [ set pcolor gray - 3 ]
+  ask (patch-at 0 0) [ set pcolor gray]
 end
 
 ;; After unisolating, patch turns back to normal color
@@ -407,9 +329,8 @@ to unisolate  ;; turtle procedure
   set isolated? false
   set hospitalized? false
 
-  ask (patch-at 0 0) [ set pcolor black ]
+  ask (patch-at 0 0) [ set pcolor white ]
 
-  ask border [ set pcolor white ]                      ;; patches on the border stay yellow
   ask (patch-set patches with [plabel = "H"]) [ set pcolor blue ]  ;; hospital patch on the left stays white
   ;ask (patch (max-pxcor / 2) 0) [ set pcolor blue ]    ;; hospital patch on the right stays white
 end
@@ -418,13 +339,7 @@ end
 to hospitalize ;; turtle procedure
   set hospitalized? true
   set pcolor black
-  ifelse breed = p1s
-  [
     move-to one-of patch-set patches with [plabel = "H" and pxcor < 0 ]
-  ]
-  [
-    move-to one-of patch-set patches with [plabel = "H" and pxcor > 0 ]
-  ]
   set pcolor white
 end
 
@@ -529,38 +444,6 @@ to calculate-r0-p1
 
 end
 
-to calculate-r0-p2
-
-  let new-infected-p2 sum [ nb-infected ] of p2s
-  let new-recovered-p2 sum [ nb-recovered ] of p2s
-  set nb-infected-previous-p2 (count p2s with [ infected? ] + new-recovered-p2 - new-infected-p2)  ;; Number of infected people at the previous tick
-  let susceptible-t-p2 (count(p2s) - (count p2s with [ infected? ]) - (count p2s with [ cured? ]))  ;; Number of susceptibles now
-  let s0-p2 count p2s with [ susceptible? ] ;; Initial number of susceptibles
-
-  ifelse nb-infected-previous-p2 < 10
-  [ set beta-n-p2 0 ]
-  [
-    set beta-n-p2 (new-infected-p2 / nb-infected-previous-p2)       ;; This is the average number of new secondary infections per infected this tick
-  ]
-
-  ifelse nb-infected-previous-p2 < 5
-  [ set gamma-p2 0 ]
-  [
-    set gamma-p2 (new-recovered-p2 / nb-infected-previous-p2)     ;; This is the average number of new recoveries per infected this tick
-  ]
-
-  if ((count(p2s) - susceptible-t-p2) != 0 and (susceptible-t-p2 != 0))   ;; Prevent from dividing by 0
-  [
-    ;; This is derived from integrating dI / dS = (beta*SI - gamma*I) / (-beta*SI)
-    ;; Assuming one infected individual introduced in the beginning, and hence counting I(0) as negligible,
-    ;; we get the relation
-    ;; N - gamma*ln(S(0)) / beta = S(t) - gamma*ln(S(t)) / beta, where N is the initial 'susceptible' population.
-    ;; Since N >> 1
-    ;; Using this, we have R_0 = beta*N / gamma = N*ln(S(0)/S(t)) / (K-S(t))
-    set r0-p2 (ln (s0-p2 / susceptible-t-p2) / (count(p2s) - susceptible-t-p2))
-    set r0-p2 r0-p2 * s0-p2 ]
-
-end
 
 
 ; Copyright 2011 Uri Wilensky.
@@ -569,11 +452,11 @@ end
 GRAPHICS-WINDOW
 405
 10
-958
-474
+838
+374
 -1
 -1
-8.93443
+6.97
 1
 10
 1
@@ -591,13 +474,13 @@ GRAPHICS-WINDOW
 1
 1
 days
-30.0
+35.0
 
 BUTTON
-140
-230
-223
-263
+145
+180
+228
+213
 Inicializar
 setup
 NIL
@@ -611,10 +494,10 @@ NIL
 1
 
 BUTTON
-225
 230
-315
-263
+180
+320
+213
 Ejecutar
 go
 T
@@ -634,34 +517,34 @@ SLIDER
 53
 p1-poblacion
 p1-poblacion
-1
-500
-1.0
-10
+0
+1000
+700.0
+20
 1
 NIL
 HORIZONTAL
 
 SLIDER
-140
-160
-265
-193
+270
+55
+395
+88
 p1-por-deteccion
 p1-por-deteccion
 0
 50
-0.0
+20.0
 5
 1
 NIL
 HORIZONTAL
 
 PLOT
-0
-265
-395
-405
+5
+225
+400
+365
 Poblacion infectada
 dias
 # personas
@@ -673,8 +556,8 @@ true
 true
 "" ""
 PENS
-"País 1" 1.0 0 -13210332 true "" "plot count p1s with [ infected?]"
-"País 2" 1.0 0 -10022847 true "" "plot count p2s with [ infected?]"
+"Infectados" 1.0 0 -10263788 true "" "plot count p1s with [ infected?]"
+"Críticos" 1.0 0 -5298144 true "" "plot count p1s with [ salud <= 2]"
 
 SLIDER
 100
@@ -749,7 +632,7 @@ prob-contagio
 prob-contagio
 1
 50
-15.0
+26.0
 1
 1
 NIL
@@ -782,42 +665,16 @@ vinculos?
 -1000
 
 SLIDER
-140
-125
-265
-158
+270
+90
+395
+123
 p1-mobilidad-local
 p1-mobilidad-local
 0
-1
+10
 1.0
-0.1
 1
-NIL
-HORIZONTAL
-
-SWITCH
-5
-160
-135
-193
-viajes-int?
-viajes-int?
-1
-1
--1000
-
-SLIDER
-5
-195
-135
-228
-mobilidad-internacional
-mobilidad-internacional
-0
-1
-0.5
-.05
 1
 NIL
 HORIZONTAL
@@ -838,10 +695,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-315
-230
-395
-263
+320
+180
+400
+213
 1 paso
 go
 NIL
@@ -856,44 +713,29 @@ NIL
 
 SLIDER
 140
-90
+55
 265
-123
+88
 p1-infectados-inicial
 p1-infectados-inicial
 0
 10
-0.0
+5.0
 1
 1
 NIL
 HORIZONTAL
 
 MONITOR
-505
-475
-570
-520
+460
+375
+525
+420
 Infectados
 count p1s with [ infected?]
 0
 1
 11
-
-SLIDER
-270
-160
-395
-193
-p2-por-deteccion
-p2-por-deteccion
-0
-100
-10.0
-1
-1
-NIL
-HORIZONTAL
 
 SLIDER
 560
@@ -911,30 +753,15 @@ NIL
 HORIZONTAL
 
 SLIDER
-140
-194
-265
-227
-p1-med-personales
-p1-med-personales
-0
-100
-50.0
-5
-1
-NIL
-HORIZONTAL
-
-SLIDER
 270
-194
+20
 395
-227
-p2-med-personales
-p2-med-personales
+53
+p1-med-personales
+p1-med-personales
 0
 100
-50.0
+0.0
 5
 1
 NIL
@@ -949,57 +776,6 @@ País 1
 11
 52.0
 1
-
-TEXTBOX
-275
-0
-315
-18
-País 2
-11
-123.0
-1
-
-SLIDER
-270
-125
-395
-158
-p2-mobilidad-local
-p2-mobilidad-local
-0
-1
-0.8
-0.1
-1
-NIL
-HORIZONTAL
-
-MONITOR
-780
-475
-845
-520
-Infectados
-count p2s with [infected?]
-0
-1
-11
-
-SLIDER
-270
-90
-395
-123
-p2-infectados-inicial
-p2-infectados-inicial
-0
-10
-5.0
-1
-1
-NIL
-HORIZONTAL
 
 TEXTBOX
 105
@@ -1027,32 +803,21 @@ NIL
 HORIZONTAL
 
 MONITOR
-630
-475
-680
-520
+790
+375
+840
+420
 R0 P1
 r0-p1
 2
 1
 11
 
-MONITOR
-905
-475
-955
-520
-R0 P2
-r0-p2
-2
-1
-11
-
 PLOT
-0
-405
-395
-555
+5
+365
+400
+515
 Infectados y Recuperados (Acumulativo)
 dias
 % total pob.
@@ -1066,8 +831,6 @@ true
 PENS
 "% inf p1" 1.0 0 -15973838 true "" "plot (((count p1s with [ cured? ] + count p1s with [ infected? ]) / count p1s) * 100)"
 "% rec p1" 1.0 0 -10899396 true "" "plot ((count p1s with [ cured? ] / count p1s) * 100)"
-"% inf p2" 1.0 0 -12186836 true "" "plot (((count p2s with [ cured? ] + count p2s with [ infected? ]) / count p2s) * 100)"
-"% rec p2" 1.0 0 -5825686 true "" "plot ((count p2s with [ cured? ] / count p2s) * 100)"
 
 SWITCH
 395
@@ -1081,41 +844,15 @@ hospitales?
 -1000
 
 MONITOR
-570
-475
-630
-520
+655
+375
+715
+420
 Fallecidos
 muertes-p1
 0
 1
 11
-
-MONITOR
-845
-475
-905
-520
-Fallecidos
-Muertes-P2
-0
-1
-11
-
-SLIDER
-270
-20
-395
-53
-p2-poblacion
-p2-poblacion
-0
-500
-500.0
-10
-1
-NIL
-HORIZONTAL
 
 TEXTBOX
 5
@@ -1125,26 +862,6 @@ TEXTBOX
 Variables Globales
 12
 0.0
-1
-
-TEXTBOX
-410
-480
-490
-498
-País 1
-14
-52.0
-1
-
-TEXTBOX
-690
-480
-760
-498
-País 2
-14
-122.0
 1
 
 PLOT
@@ -1168,39 +885,24 @@ PENS
 
 SLIDER
 140
-55
+90
 265
-88
+123
 por-riesgo-p1
 por-riesgo-p1
 0
 20
-5.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-270
-55
-395
-88
-por-riesgo-p2
-por-riesgo-p2
-0
-100
-5.0
+6.0
 1
 1
 NIL
 HORIZONTAL
 
 MONITOR
-450
-475
-507
-520
+405
+375
+462
+420
 Pob
 count p1s
 0
@@ -1208,32 +910,10 @@ count p1s
 11
 
 MONITOR
-732
-475
-782
-520
-pob
-count p2s
-0
-1
-11
-
-MONITOR
-780
-520
-845
-565
-Detectados
-count p2s with [detected?]
-0
-1
-11
-
-MONITOR
-505
-520
-570
-565
+525
+375
+600
+420
 Detectados
 count p1s with [detected?]
 0
@@ -1241,14 +921,25 @@ count p1s with [detected?]
 11
 
 TEXTBOX
-585
-530
-800
-626
-Blanco = Sanos\nAmarillo = Contagiados no detectados\nAzul = Contagiados detectados\nRojo = Estado crítico\nVerde = Curado
+580
+435
+795
+531
+Celeste = Sanos\nVioleta = Contagiados no detectados\nAzul = Contagiados detectados\nRojo = Estado crítico\nVerde = Curado
 11
 0.0
 1
+
+MONITOR
+600
+375
+657
+420
+Críticos
+count p1s with [ salud <= 2]
+0
+1
+11
 
 @#$#@#$#@
 # Dispersión espacial y prevención COVID 19 
