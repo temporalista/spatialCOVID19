@@ -21,6 +21,7 @@ globals
   p-tendencia-hospitalizacion
   ;Vulnerables               ;percent of people in a risk group (senior, diabetes, heart condition, etc.)
   ;por-riesgo-p2
+  capacidad-hospital
 ]
 
 turtles-own
@@ -45,6 +46,10 @@ turtles-own
 
 ]
 
+patches-own
+[
+  hospital?
+]
 ;breed [p1s p1]
 ;breed [p2s p2]
 
@@ -64,13 +69,15 @@ to setup
 end
 
 to setup-globals
-  ask patches [set pcolor white]
+  ask patches [set pcolor white set hospital? false]
   set hospitales? false
   set incubation-time 5.5  ;Baum et al.https://www.jwatch.org/na51083/2020/03/13/covid-19-incubation-period-update
 
   if hospitales? [
-  ask patch (- max-pxcor / 2 ) max-pycor [ set pcolor blue set plabel "H"]
-  ask patch (max-pxcor / 2 ) max-pycor [ set pcolor blue set plabel "H"]
+    ask patches with [pxcor <= 1 and pxcor >= -1 and pycor > max-pycor - 3] [ set pcolor blue set hospital? true]
+    ask patches with [pxcor <= 1 and pxcor >= -1 and pycor < min-pycor + 3] [ set pcolor blue set hospital? true]
+    set p-tendencia-hospitalizacion 10
+    set capacidad-hospital poblacion / 100
   ]
 
 
@@ -210,7 +217,7 @@ to go
 
   if hospitales? [
     ask turtles
-    [ if not isolated? and not hospitalized? and infected? and (random 100 < tendencia-hospitalizacion)
+    [ if not isolated? and not hospitalized? and infected? and detected? and (random 100 < tendencia-hospitalizacion)
       [ hospitalize ]
     ]
   ]
@@ -221,8 +228,7 @@ to go
     ]
 
   ask turtles
-    [ if (isolated?
-      ;or hospitalized?
+    [ if (isolated? or hospitalized?
       ) and cured?
         [ unisolate ] ]
 
@@ -237,7 +243,6 @@ to go
     ask turtles
     [ assign-color
       calculate-r0
-      calculate-r0-p1
   ]
 
   tick
@@ -276,8 +281,8 @@ to move  ;; turtle procedure
 ;      [
 ;        set angle random-normal 180 10
 ;      ]
-      rt random-normal 0 180
-      fd random-normal movilidad movilidad / 1
+      rt random-normal 0 90
+      fd random-normal movilidad movilidad / 2
 end
 
 to clear-count
@@ -337,20 +342,18 @@ end
 ;; After unisolating, patch turns back to normal color
 to unisolate  ;; turtle procedure
   set isolated? false
-  ;set hospitalized? false
+  set hospitalized? false
 
-  ask (patch-here) [set pcolor white]
+  ask (patch-here) [if hospital? = false [set pcolor white]]
 
   ;ask (patch-set patches with [plabel = "H"]) [ set pcolor blue ]  ;; hospital patch on the left stays white
   ;ask (patch (max-pxcor / 2) 0) [ set pcolor blue ]    ;; hospital patch on the right stays white
 end
 
-;; To hospitalize, move to hospital patch in the continent of current residence
+;; To hospitalize, move to one of the hospital patches
 to hospitalize ;; turtle procedure
   set hospitalized? true
-  set pcolor black
-    move-to one-of patch-set patches with [plabel = "H" and pxcor < 0 ]
-  set pcolor white
+    move-to one-of patch-set patches with [hospital? = true]
 end
 
 ;; Infected individuals who are not isolated or hospitalized have a chance of transmitting their disease to their susceptible neighbors.
@@ -421,38 +424,6 @@ to calculate-r0
     set r0 r0 * s0 ]
 end
 
-to calculate-r0-p1
-
-  let new-infected-p1 sum [ nb-infected ] of turtles
-  let new-recovered-p1 sum [ nb-recovered ] of turtles
-  set nb-infected-previous-p1 (count turtles with [ infected? ] + new-recovered-p1 - new-infected-p1)  ;; Number of infected people at the previous tick
-  let susceptible-t-p1 (count(turtles) - (count turtles with [ infected? ]) - (count turtles with [ cured? ]))  ;; Number of susceptibles now
-  let s0-p1 count turtles with [ susceptible? ] ;; Initial number of susceptibles
-
-  ifelse nb-infected-previous-p1 < 10
-  [ set beta-n-p1 0 ]
-  [
-    set beta-n-p1 (new-infected-p1 / nb-infected-previous-p1)       ;; This is the average number of new secondary infections per infected this tick
-  ]
-
-  ifelse nb-infected-previous-p1 < 5
-  [ set gamma-p1 0 ]
-  [
-    set gamma-p1 (new-recovered-p1 / nb-infected-previous-p1)     ;; This is the average number of new recoveries per infected this tick
-  ]
-
-  if ((count(turtles) - susceptible-t-p1) != 0 and (susceptible-t-p1 != 0))   ;; Prevent from dividing by 0
-  [
-    ;; This is derived from integrating dI / dS = (beta*SI - gamma*I) / (-beta*SI)
-    ;; Assuming one infected individual introduced in the beginning, and hence counting I(0) as negligible,
-    ;; we get the relation
-    ;; N - gamma*ln(S(0)) / beta = S(t) - gamma*ln(S(t)) / beta, where N is the initial 'susceptible' population.
-    ;; Since N >> 1
-    ;; Using this, we have R_0 = beta*N / gamma = N*ln(S(0)/S(t)) / (K-S(t))
-    set r0-p1 (ln (s0-p1 / susceptible-t-p1) / (count(turtles) - susceptible-t-p1))
-    set r0-p1 r0-p1 * s0-p1 ]
-
-end
 
 
 
@@ -484,7 +455,7 @@ GRAPHICS-WINDOW
 1
 1
 days
-60.0
+15.0
 
 BUTTON
 5
@@ -529,7 +500,7 @@ Poblacion
 Poblacion
 0
 1000
-700.0
+500.0
 20
 1
 NIL
@@ -544,8 +515,8 @@ Tasa-Deteccion
 Tasa-Deteccion
 0
 50
-5.0
-5
+1.0
+1
 1
 NIL
 HORIZONTAL
@@ -554,7 +525,7 @@ PLOT
 0
 115
 370
-255
+395
 Poblacion infectada
 dias
 # personas
@@ -563,10 +534,10 @@ dias
 0.0
 100.0
 true
-true
+false
 "" ""
 PENS
-"Infectados" 1.0 0 -11783835 true "" "plot count turtles with [ infected?]"
+"Infectados" 1.0 0 -11783835 true "" "plot (count turtles with [ infected?])"
 
 SLIDER
 5
@@ -577,7 +548,7 @@ probabilidad-contagio
 probabilidad-contagio
 1
 50
-19.0
+26.0
 1
 1
 NIL
@@ -607,7 +578,7 @@ movilidad
 movilidad
 0
 2
-1.0
+1.6
 0.2
 1
 NIL
@@ -680,7 +651,7 @@ precauciones-per
 precauciones-per
 0
 100
-30.0
+0.0
 5
 1
 NIL
@@ -706,17 +677,17 @@ MONITOR
 405
 370
 450
-R0 P1
-r0-p1
+R0
+r0
 2
 1
 11
 
 PLOT
-0
-255
-370
-405
+5
+575
+375
+800
 Infectados y Recuperados (Acumulativo)
 dias
 % total pob.
@@ -761,7 +732,7 @@ Vulnerables
 Vulnerables
 0
 20
-10.0
+5.0
 1
 1
 NIL
@@ -783,7 +754,7 @@ TEXTBOX
 480
 565
 555
-Celeste = Sanos\nVioleta = Infectados no detectados\nAzul  = Infectados detectados\nRojo  = En estado crítico\nVerde = Recuperados
+Celeste = Sanos\nVioleta = Infectados no detectados\nAzul  = Infectados aislados\nRojo  = En estado crítico\nVerde = Recuperados
 11
 0.0
 1
@@ -860,7 +831,7 @@ Movilidad de la población
 1
 
 @#$#@#$#@
-# Dispersión espacial y prevención COVID 19 
+# Dispersión espacial y prevención de epidemias
 
 WORK IN PROGRESS
 
