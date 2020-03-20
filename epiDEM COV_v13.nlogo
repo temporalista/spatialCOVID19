@@ -351,6 +351,7 @@ to unisolate  ;; turtle procedure
   if hospitalized? = true [
     set hospitalized? false
     set capacidad-hospital capacidad-hospital + 1
+    ask patch-here [set pcolor blue]
   ]
 
 end
@@ -442,9 +443,9 @@ end
 @#$#@#$#@
 GRAPHICS-WINDOW
 375
-10
+25
 793
-429
+444
 -1
 -1
 10.0
@@ -510,7 +511,7 @@ Poblacion
 Poblacion
 0
 1000
-500.0
+1000.0
 20
 1
 NIL
@@ -525,7 +526,7 @@ Tasa-Deteccion
 Tasa-Deteccion
 0
 50
-6.0
+30.0
 1
 1
 NIL
@@ -643,9 +644,9 @@ HORIZONTAL
 
 MONITOR
 550
-430
+445
 615
-475
+490
 Infectados
 count turtles with [ infected?]
 0
@@ -661,7 +662,7 @@ precauciones-per
 precauciones-per
 0
 100
-0.0
+20.0
 5
 1
 NIL
@@ -714,9 +715,9 @@ PENS
 
 MONITOR
 730
-475
+490
 790
-520
+535
 Fallecidos
 muertes
 0
@@ -742,7 +743,7 @@ Vulnerables
 Vulnerables
 0
 50
-6.0
+20.0
 1
 1
 NIL
@@ -750,9 +751,9 @@ HORIZONTAL
 
 MONITOR
 670
-430
+445
 740
-475
+490
 Detectados
 count turtles with [detected?]
 0
@@ -761,9 +762,9 @@ count turtles with [detected?]
 
 TEXTBOX
 380
-430
+445
 565
-511
+540
 Celeste = Sanos\nAmarillo = Vulnerables\nVioleta = Infectados no aislados\nRecuadro  = Infectados aislados\nRojo  = En estado crítico\nVerde = Recuperados
 11
 0.0
@@ -771,9 +772,9 @@ Celeste = Sanos\nAmarillo = Vulnerables\nVioleta = Infectados no aislados\nRecua
 
 MONITOR
 740
-430
+445
 790
-475
+490
 Críticos
 count turtles with [ salud <= 2]
 0
@@ -842,9 +843,9 @@ Movilidad de la población
 
 MONITOR
 550
-475
+490
 645
-520
+535
 Hospitalizados
 count turtles with [hospitalized? = true]
 0
@@ -853,9 +854,9 @@ count turtles with [hospitalized? = true]
 
 MONITOR
 645
-475
+490
 730
-520
+535
 capacidad hosp
 capacidad-hospital
 0
@@ -871,7 +872,7 @@ camas
 camas
 0
 10
-5.0
+10.0
 1
 1
 NIL
@@ -889,14 +890,43 @@ Camas de \nHospital
 
 MONITOR
 615
-430
+445
 672
-475
+490
 Acum
 (count turtles with [ cured? ] + count turtles with [ infected? ] + muertes)
 0
 1
 11
+
+TEXTBOX
+580
+10
+630
+28
+HOSPITAL
+11
+0.0
+1
+
+PLOT
+390
+575
+790
+715
+Sistema de Salud
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"Capacidad Hospitalaria" 1.0 0 -16777216 true "" "plot camas"
+"Hospitalizados" 1.0 0 -14070903 true "" "plot count turtles with [hospitalized?]"
 
 @#$#@#$#@
 # Dispersión espacial y prevención de epidemias
