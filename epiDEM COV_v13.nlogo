@@ -511,7 +511,7 @@ Poblacion
 Poblacion
 0
 1000
-1000.0
+600.0
 20
 1
 NIL
@@ -861,7 +861,7 @@ camas
 camas
 0
 10
-5.0
+3.0
 1
 1
 NIL
