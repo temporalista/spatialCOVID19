@@ -443,9 +443,9 @@ end
 @#$#@#$#@
 GRAPHICS-WINDOW
 375
-25
+65
 793
-444
+484
 -1
 -1
 10.0
@@ -469,11 +469,11 @@ days
 15.0
 
 BUTTON
-5
-430
-88
-463
-Inicializar
+475
+10
+560
+43
+Generar Mundo
 setup
 NIL
 1
@@ -486,11 +486,11 @@ NIL
 1
 
 BUTTON
-90
-430
-180
-463
-Ejecutar
+560
+10
+647
+43
+Iniciar
 go
 T
 1
@@ -534,9 +534,9 @@ HORIZONTAL
 
 PLOT
 0
-145
+155
 370
-425
+435
 Poblacion infectada
 dias
 # personas
@@ -552,9 +552,9 @@ PENS
 
 SLIDER
 5
-500
+450
 145
-533
+483
 probabilidad-contagio
 probabilidad-contagio
 1
@@ -567,9 +567,9 @@ HORIZONTAL
 
 SLIDER
 145
-535
+485
 285
-568
+518
 probabilidad-recuperacion
 probabilidad-recuperacion
 10
@@ -597,9 +597,9 @@ HORIZONTAL
 
 SLIDER
 145
-500
+450
 285
-533
+483
 tiempo-recuperacion
 tiempo-recuperacion
 10
@@ -611,10 +611,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-180
-430
-260
-463
+645
+10
+725
+43
 +1 día
 go
 NIL
@@ -644,9 +644,9 @@ HORIZONTAL
 
 MONITOR
 550
-445
+485
 615
-490
+530
 Infectados
 count turtles with [ infected?]
 0
@@ -670,9 +670,9 @@ HORIZONTAL
 
 SLIDER
 5
-535
+485
 145
-568
+518
 efecto-precauciones-per
 efecto-precauciones-per
 1
@@ -683,22 +683,11 @@ efecto-precauciones-per
 NIL
 HORIZONTAL
 
-MONITOR
-320
-425
-370
-470
-R0
-r0
-2
-1
-11
-
 PLOT
 5
-575
-375
-800
+525
+370
+740
 Infectados y Recuperados (Acumulativo)
 dias
 % total pob.
@@ -715,9 +704,9 @@ PENS
 
 MONITOR
 730
-490
+530
 790
-535
+575
 Fallecidos
 muertes
 0
@@ -726,9 +715,9 @@ muertes
 
 TEXTBOX
 5
-485
+435
 155
-503
+453
 Características del virus
 12
 0.0
@@ -751,9 +740,9 @@ HORIZONTAL
 
 MONITOR
 670
-445
+485
 740
-490
+530
 Detectados
 count turtles with [detected?]
 0
@@ -762,9 +751,9 @@ count turtles with [detected?]
 
 TEXTBOX
 380
-445
+485
 565
-540
+580
 Celeste = Sanos\nAmarillo = Vulnerables\nVioleta = Infectados no aislados\nRecuadro  = Infectados aislados\nRojo  = En estado crítico\nVerde = Recuperados
 11
 0.0
@@ -772,9 +761,9 @@ Celeste = Sanos\nAmarillo = Vulnerables\nVioleta = Infectados no aislados\nRecua
 
 MONITOR
 740
-445
+485
 790
-490
+530
 Críticos
 count turtles with [ salud <= 2]
 0
@@ -843,9 +832,9 @@ Movilidad de la población
 
 MONITOR
 550
-490
+530
 645
-535
+575
 Hospitalizados
 count turtles with [hospitalized? = true]
 0
@@ -854,9 +843,9 @@ count turtles with [hospitalized? = true]
 
 MONITOR
 645
-490
+530
 730
-535
+575
 capacidad hosp
 capacidad-hospital
 0
@@ -890,9 +879,9 @@ Camas de \nHospital
 
 MONITOR
 615
-445
+485
 672
-490
+530
 Acum
 (count turtles with [ cured? ] + count turtles with [ infected? ] + muertes)
 0
@@ -901,9 +890,9 @@ Acum
 
 TEXTBOX
 580
-10
+50
 630
-28
+68
 HOSPITAL
 11
 0.0
@@ -913,7 +902,7 @@ PLOT
 390
 575
 790
-715
+740
 Sistema de Salud
 NIL
 NIL
@@ -927,6 +916,17 @@ true
 PENS
 "Capacidad Hospitalaria" 1.0 0 -16777216 true "" "plot camas"
 "Hospitalizados" 1.0 0 -14070903 true "" "plot count turtles with [hospitalized?]"
+
+MONITOR
+315
+475
+372
+520
+R0
+R0
+2
+1
+11
 
 @#$#@#$#@
 # Dispersión espacial y prevención de epidemias
@@ -942,22 +942,24 @@ https://www.twitter.com/temporalista
 
 ## De qué se trata?
 
-Este modelo simula la propagación espacial de un virus en dos poblaciones semi-cerradas bajo una serie de condiciones, tales como mobilidad interna, predisposición a la cuarentena, medidas personales de sanidad, etc. El modelo no busca realizar predicciones sino ilustrar cómo afectan los cambios de estas medidas en la propagación del virus. Es una ampliación del modelo epiDEM desarrolado por Yang, C. and Wilensky, U. (2011).
+Este modelo simula la propagación espacial de un virus en una población bajo una serie de condiciones, tales como mobilidad interna, predisposición a la cuarentena, medidas personales de sanidad, etc. El modelo no busca realizar predicciones sino ilustrar cómo afectan los cambios de estas medidas en la propagación del virus. Es una ampliación del modelo epiDEM desarrolado por Yang, C. and Wilensky, U. (2011).
 
 En general, el modelo permite a los usuarios:
 1) Entender la dinámica de una enfermedad emergente como el COVID-19 en relación a medidas de control, cuarentenas, prohibición de viajes, etc.
-2) Experimentar la comparación de medidas entre dos poblaciones similares
+2) Experimentar la comparación de medidas
 3) Entender el concepto de #AplanarLaCurva para evitar el colapso del sistema de salud
-4) (por desarrollar) Explorar el impacto de comportamientos de pánico en algunos comportamientos emergentes: desabastecimiento,  saturación de los hospitales, etc.
+4) Explorar el impacto en la saturación de los hospitales.
 
 
 ## Cómo Funciona?
 
-Existen dos países p1 y p2 divididos por una frontera que no se puede cruzar. Las personas se movilizan libremente dentro de cada país. Dentro de la población surge un virus que infecta a un número reducido de personas (ej 5). El virus se transmite por contacto directo, por lo tanto, cuando una persona sana entra en contacto con alguien infectado, tiene una probabilidad de contagiarse ("probabilidad-contagio").
+Las personas se movilizan libremente dentro del territorio. Surge un virus que infecta a un número reducido de personas (ej 5). El virus se transmite por contacto directo, por lo tanto, cuando una persona sana entra en contacto con alguien infectado, tiene una probabilidad de contagiarse ("probabilidad-contagio").
 
-Una vez infectada, la persona sigue su rutina normal con probabilidad de contagiar a otras persoans, o puede auto-aislarse (tendencia-cuarentena). La infección dura en promedio un tiempo determinado (tiempo-promedio-recuperacion) luego de lo cual, cada día hay la probabilidad de curarse (probabilidad-recuperacion). Las personas pueden cambiar su comportamiento y tomar medidas personales (p-medidas-personales) como lavarse las manos, mantener distancia social, etc. Estas medidas puueden tienen un factor de eficacia (emp) que disminuye la probabilidad de contagio).
+Una vez infectada, la persona sigue su rutina normal con probabilidad de contagiar a otras personas. Cuando presenta síntomas, puede ser detectada según el % de la tasa de detección que tenga el sistema de salud y será aislado. La infección dura en promedio un tiempo determinado (tiempo-recuperacion) luego de lo cual, cada día hay la probabilidad de curarse (probabilidad-recuperacion). Las personas pueden cambiar su comportamiento y tomar medidas personales (p-medidas-personales) como lavarse las manos, mantener distancia social, etc. Estas medidas puueden tienen un factor de eficacia (emp) que disminuye la probabilidad de contagio).
 
-Los gráficos representan entre otros datos, el número de infectados en cada país a lo largo del tiempo.
+Cada persona tiene un índice de salud de 0 a 10. La enfermedad disminuirá su salud. Además si es vulnerable, su salud disminuirá más rápido. Las personas en estado crítico serán trasladadas al hospital donde ocuparán una cama disponible y tendrán mayor probabilidad de recuperarse. Si ya no hay camas disponibles no podrán ingresar al hospital.
+
+Los gráficos representan entre otros datos, el número de infectados en cada país a lo largo del tiempo. 
 
 
 
