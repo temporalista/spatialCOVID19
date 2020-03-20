@@ -1,21 +1,12 @@
 globals
 [
   nb-infected-previous ;; Number of infected people at the previous tick
-  nb-infected-previous-p1 ; For country 1
-  nb-infected-previous-p2 ; For country 2
   border               ;; The patches representing the yellow border
   angle                ;; Heading for individuals
   beta-n               ;; The average number of new secondary infections per infected this tick
-  beta-n-p1
-  beta-n-p2
   gamma                ;; The average number of new recoveries per infected this tick
-  gamma-p1
-  gamma-p2
   r0                   ;; The number of secondary infections that arise due to a single infective introduced in a wholly susceptible population
-  r0-p1
-  r0-p2
-  muertes-p1
-  muertes-p2
+  muertes
   incubation-time
   hospitales?
   p-tendencia-hospitalizacion
@@ -70,14 +61,14 @@ end
 
 to setup-globals
   ask patches [set pcolor white set hospital? false]
-  set hospitales? false
+  set hospitales? true
   set incubation-time 5.5  ;Baum et al.https://www.jwatch.org/na51083/2020/03/13/covid-19-incubation-period-update
 
   if hospitales? [
-    ask patches with [pxcor <= 1 and pxcor >= -1 and pycor > max-pycor - 3] [ set pcolor blue set hospital? true]
-    ask patches with [pxcor <= 1 and pxcor >= -1 and pycor < min-pycor + 3] [ set pcolor blue set hospital? true]
-    set p-tendencia-hospitalizacion 10
-    set capacidad-hospital poblacion / 100
+    set capacidad-hospital camas
+    ask patches with [pxcor >= 0 and pxcor < capacidad-hospital and pycor = max-pycor ]
+    [ set pcolor blue set hospital? true]
+    set p-tendencia-hospitalizacion 50
   ]
 
 
@@ -109,9 +100,8 @@ to setup-people
 
     set size 0.7
 
-      ]
-
-  assign-tendency
+    assign-tendency
+  ]
 
 end
 
@@ -133,15 +123,12 @@ end
 
 to assign-tendency ;; Turtle procedure
 
-  ask turtles [
     if (random-float 100 < precauciones-per) [ set f-medidas-personales (1 / efecto-precauciones-per)]
     set tendencia-hospitalizacion random-normal p-tendencia-hospitalizacion (p-tendencia-hospitalizacion / 4)
     if (random-float 100 < Vulnerables) [ set vulnerable? true]
     set por-deteccion tasa-deteccion
-      ]
 
 
-  ask turtles [
   set recovery-time random-normal tiempo-recuperacion (tiempo-recuperacion / 4)
 
   ;; Make sure recovery-time lies between 0 and 2x tiempo-recuperacion
@@ -153,7 +140,6 @@ to assign-tendency ;; Turtle procedure
   if tendencia-hospitalizacion > tendencia-hospitalizacion * 2 [ set tendencia-hospitalizacion (tendencia-hospitalizacion * 2) ]
   if tendencia-hospitalizacion < 0 [ set tendencia-hospitalizacion 0 ]
 
-  ]
 end
 
 
@@ -162,20 +148,23 @@ end
 to assign-color ;; turtle procedure
 
 
+  ifelse vulnerable?
+  [set color 45]
+  [set color 85]
 
   ifelse cured?
   [ set color green ]
-  [ ifelse infected?
-    [set color 114
-      if salud < 2 [ set color red ]
-      if detected? [set color blue]
+  [ if infected?
+    [ifelse salud <= 4
+      [set color red]
+      [ifelse detected?
+          [ifelse hospitalized?
+            [set color white]
+            [set color blue]
+        ]
+      [set color 115]
     ]
-    [ifelse vulnerable?
-      [set color 45
-      ]
-      [set color 85
-      ]
-    ]
+  ]
   ]
 
 
@@ -217,7 +206,11 @@ to go
 
   if hospitales? [
     ask turtles
-    [ if not isolated? and not hospitalized? and infected? and detected? and (random 100 < tendencia-hospitalizacion)
+    [ if not hospitalized?
+      and infected?
+      and salud < 2
+      and (random 100 < tendencia-hospitalizacion)
+      and capacidad-hospital > 0
       [ hospitalize ]
     ]
   ]
@@ -253,7 +246,7 @@ to calcular-salud
   if infected?[
     ifelse hospitalized?[
       ifelse vulnerable?
-      [set salud salud - 0.2]    ;riesgo, hospitalizado
+      [set salud salud - 0.1]    ;riesgo, hospitalizado
       [set salud salud - 0.05]   ;no riesgo, hospitalizado
     ]
     [ifelse vulnerable?
@@ -263,11 +256,19 @@ to calcular-salud
    ]
 
   if salud <= 0 [
-    set muertes-p1 (muertes-p1  + 1)
-    ask (patch-at 0 0) [set pcolor white ]
-    die
-
+    set muertes (muertes  + 1)
+    ask (patch-at 0 0) [
+      ifelse hospital? = true
+      [set pcolor blue ]
+      [set pcolor white ]
+    ]
+    if hospitalized? = true [
+    set hospitalized? false
+    set capacidad-hospital capacidad-hospital + 1
   ]
+
+    die
+    ]
 
   if (cured? and salud < 10)
     [set salud salud + 0.1]
@@ -342,18 +343,27 @@ end
 ;; After unisolating, patch turns back to normal color
 to unisolate  ;; turtle procedure
   set isolated? false
-  set hospitalized? false
+  ask (patch-here)
+  [ifelse hospital? = true
+    [set pcolor blue]
+    [set pcolor white]
+  ]
+  if hospitalized? = true [
+    set hospitalized? false
+    set capacidad-hospital capacidad-hospital + 1
+  ]
 
-  ask (patch-here) [if hospital? = false [set pcolor white]]
-
-  ;ask (patch-set patches with [plabel = "H"]) [ set pcolor blue ]  ;; hospital patch on the left stays white
-  ;ask (patch (max-pxcor / 2) 0) [ set pcolor blue ]    ;; hospital patch on the right stays white
 end
 
 ;; To hospitalize, move to one of the hospital patches
 to hospitalize ;; turtle procedure
   set hospitalized? true
-    move-to one-of patch-set patches with [hospital? = true]
+  set capacidad-hospital capacidad-hospital - 1
+  if isolated? [
+    ask patch-here [set pcolor white]
+  ]
+  move-to one-of patch-set patches with [hospital? = true and pcolor = blue]
+  ask patch-here [set pcolor blue   + 3]
 end
 
 ;; Infected individuals who are not isolated or hospitalized have a chance of transmitting their disease to their susceptible neighbors.
@@ -433,11 +443,11 @@ end
 GRAPHICS-WINDOW
 375
 10
-843
-479
+793
+429
 -1
 -1
-7.541
+10.0
 1
 10
 1
@@ -447,21 +457,21 @@ GRAPHICS-WINDOW
 0
 0
 1
--30
-30
--30
-30
-1
-1
+-20
+20
+-20
+20
+0
+0
 1
 days
 15.0
 
 BUTTON
 5
-410
+430
 88
-443
+463
 Inicializar
 setup
 NIL
@@ -476,9 +486,9 @@ NIL
 
 BUTTON
 90
-410
+430
 180
-443
+463
 Ejecutar
 go
 T
@@ -515,7 +525,7 @@ Tasa-Deteccion
 Tasa-Deteccion
 0
 50
-1.0
+6.0
 1
 1
 NIL
@@ -523,9 +533,9 @@ HORIZONTAL
 
 PLOT
 0
-115
+145
 370
-395
+425
 Poblacion infectada
 dias
 # personas
@@ -541,9 +551,9 @@ PENS
 
 SLIDER
 5
-480
+500
 145
-513
+533
 probabilidad-contagio
 probabilidad-contagio
 1
@@ -556,9 +566,9 @@ HORIZONTAL
 
 SLIDER
 145
-515
+535
 285
-548
+568
 probabilidad-recuperacion
 probabilidad-recuperacion
 10
@@ -578,7 +588,7 @@ movilidad
 movilidad
 0
 2
-1.6
+1.0
 0.2
 1
 NIL
@@ -586,14 +596,14 @@ HORIZONTAL
 
 SLIDER
 145
-480
+500
 285
-513
+533
 tiempo-recuperacion
 tiempo-recuperacion
 10
 60
-16.0
+10.0
 5
 1
 NIL
@@ -601,9 +611,9 @@ HORIZONTAL
 
 BUTTON
 180
-410
+430
 260
-443
+463
 +1 día
 go
 NIL
@@ -632,10 +642,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-585
-480
-660
-525
+550
+430
+615
+475
 Infectados
 count turtles with [ infected?]
 0
@@ -659,9 +669,9 @@ HORIZONTAL
 
 SLIDER
 5
-515
+535
 145
-548
+568
 efecto-precauciones-per
 efecto-precauciones-per
 1
@@ -674,9 +684,9 @@ HORIZONTAL
 
 MONITOR
 320
-405
+425
 370
-450
+470
 R0
 r0
 2
@@ -699,25 +709,25 @@ true
 true
 "" ""
 PENS
-"% infectados" 1.0 0 -11783835 true "" "plot (((count turtles with [ cured? ] + count turtles with [ infected? ]) / count turtles) * 100)"
+"% infectados" 1.0 0 -11783835 true "" "plot (((count turtles with [ cured? ] + count turtles with [ infected? ] + muertes) / count turtles) * 100)"
 "% recuperados" 1.0 0 -10899396 true "" "plot ((count turtles with [ cured? ] / count turtles) * 100)"
 
 MONITOR
-780
-480
-840
-525
+730
+475
+790
+520
 Fallecidos
-muertes-p1
+muertes
 0
 1
 11
 
 TEXTBOX
 5
-465
+485
 155
-483
+503
 Características del virus
 12
 0.0
@@ -731,18 +741,18 @@ SLIDER
 Vulnerables
 Vulnerables
 0
-20
-5.0
+50
+6.0
 1
 1
 NIL
 HORIZONTAL
 
 MONITOR
-660
-480
-730
-525
+670
+430
+740
+475
 Detectados
 count turtles with [detected?]
 0
@@ -751,19 +761,19 @@ count turtles with [detected?]
 
 TEXTBOX
 380
-480
+430
 565
-555
-Celeste = Sanos\nVioleta = Infectados no detectados\nAzul  = Infectados aislados\nRojo  = En estado crítico\nVerde = Recuperados
+511
+Celeste = Sanos\nAmarillo = Vulnerables\nVioleta = Infectados no aislados\nRecuadro  = Infectados aislados\nRojo  = En estado crítico\nVerde = Recuperados
 11
 0.0
 1
 
 MONITOR
-730
-480
-780
-525
+740
+430
+790
+475
 Críticos
 count turtles with [ salud <= 2]
 0
@@ -814,8 +824,8 @@ TEXTBOX
 290
 50
 365
-80
-% detección de infectados
+76
+% detección y aislamiento
 11
 0.0
 1
@@ -829,6 +839,64 @@ Movilidad de la población
 11
 0.0
 1
+
+MONITOR
+550
+475
+645
+520
+Hospitalizados
+count turtles with [hospitalized? = true]
+0
+1
+11
+
+MONITOR
+645
+475
+730
+520
+capacidad hosp
+capacidad-hospital
+0
+1
+11
+
+SLIDER
+0
+115
+92
+148
+camas
+camas
+0
+10
+5.0
+1
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+95
+115
+150
+141
+Camas de \nHospital
+11
+0.0
+1
+
+MONITOR
+615
+430
+672
+475
+Acum
+(count turtles with [ cured? ] + count turtles with [ infected? ] + muertes)
+0
+1
+11
 
 @#$#@#$#@
 # Dispersión espacial y prevención de epidemias
