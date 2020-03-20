@@ -526,7 +526,7 @@ Tasa-Deteccion
 Tasa-Deteccion
 0
 50
-30.0
+0.0
 1
 1
 NIL
@@ -662,7 +662,7 @@ precauciones-per
 precauciones-per
 0
 100
-20.0
+0.0
 5
 1
 NIL
@@ -872,7 +872,7 @@ camas
 camas
 0
 10
-10.0
+5.0
 1
 1
 NIL
