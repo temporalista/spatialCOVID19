@@ -442,13 +442,13 @@ end
 ; See Info tab for full copyright and license.
 @#$#@#$#@
 GRAPHICS-WINDOW
-375
-65
-793
-484
+810
+10
+1606
+807
 -1
 -1
-10.0
+12.93
 1
 10
 1
@@ -458,10 +458,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--20
-20
--20
-20
+-30
+30
+-30
+30
 0
 0
 1
@@ -511,7 +511,7 @@ Poblacion
 Poblacion
 0
 1000
-600.0
+1000.0
 20
 1
 NIL
@@ -526,7 +526,7 @@ Tasa-Deteccion
 Tasa-Deteccion
 0
 50
-0.0
+33.0
 1
 1
 NIL
@@ -551,10 +551,10 @@ PENS
 "Infectados" 1.0 0 -11783835 true "" "plot (count turtles with [ infected?])"
 
 SLIDER
-5
-450
-145
-483
+400
+355
+540
+388
 probabilidad-contagio
 probabilidad-contagio
 1
@@ -566,10 +566,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-145
-485
-285
-518
+540
+390
+680
+423
 probabilidad-recuperacion
 probabilidad-recuperacion
 10
@@ -596,10 +596,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-145
-450
-285
-483
+540
+355
+680
+388
 tiempo-recuperacion
 tiempo-recuperacion
 10
@@ -643,10 +643,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-550
-485
-615
-530
+555
+80
+620
+125
 Infectados
 count turtles with [ infected?]
 0
@@ -662,32 +662,32 @@ precauciones-per
 precauciones-per
 0
 100
-0.0
+30.0
 5
 1
 NIL
 HORIZONTAL
 
 SLIDER
-5
-485
-145
-518
+400
+390
+540
+423
 efecto-precauciones-per
 efecto-precauciones-per
 1
 10
-2.0
+4.0
 1
 1
 NIL
 HORIZONTAL
 
 PLOT
-5
-525
+0
+435
 370
-740
+650
 Infectados y Recuperados (Acumulativo)
 dias
 % total pob.
@@ -703,10 +703,10 @@ PENS
 "% recuperados" 1.0 0 -10899396 true "" "plot ((count turtles with [ cured? ] / count turtles) * 100)"
 
 MONITOR
-730
-530
-790
-575
+735
+125
+795
+170
 Fallecidos
 muertes
 0
@@ -714,10 +714,10 @@ muertes
 11
 
 TEXTBOX
-5
-435
-155
-453
+400
+340
+550
+358
 Características del virus
 12
 0.0
@@ -739,10 +739,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-670
-485
-740
-530
+675
+80
+745
+125
 Detectados
 count turtles with [detected?]
 0
@@ -750,20 +750,20 @@ count turtles with [detected?]
 11
 
 TEXTBOX
-380
-485
-565
-580
+385
+80
+570
+175
 Celeste = Sanos\nAmarillo = Vulnerables\nVioleta = Infectados no aislados\nRecuadro  = Infectados aislados\nRojo  = En estado crítico\nVerde = Recuperados
 11
 0.0
 1
 
 MONITOR
-740
-485
-790
-530
+745
+80
+795
+125
 Críticos
 count turtles with [ salud <= 2]
 0
@@ -831,10 +831,10 @@ Movilidad de la población
 1
 
 MONITOR
-550
-530
-645
-575
+555
+125
+650
+170
 Hospitalizados
 count turtles with [hospitalized? = true]
 0
@@ -842,10 +842,10 @@ count turtles with [hospitalized? = true]
 11
 
 MONITOR
-645
-530
-730
-575
+650
+125
+735
+170
 capacidad hosp
 capacidad-hospital
 0
@@ -860,8 +860,8 @@ SLIDER
 camas
 camas
 0
-10
-3.0
+20
+5.0
 1
 1
 NIL
@@ -878,10 +878,10 @@ Camas de \nHospital
 1
 
 MONITOR
-615
-485
-672
-530
+620
+80
+677
+125
 Acum
 (count turtles with [ cured? ] + count turtles with [ infected? ] + muertes)
 0
@@ -889,20 +889,20 @@ Acum
 11
 
 TEXTBOX
-580
-50
-630
-68
+1085
+10
+1135
+28
 HOSPITAL
 11
 0.0
 1
 
 PLOT
-390
-575
-790
-740
+395
+170
+795
+335
 Sistema de Salud
 NIL
 NIL
@@ -918,10 +918,10 @@ PENS
 "Hospitalizados" 1.0 0 -14070903 true "" "plot count turtles with [hospitalized?]"
 
 MONITOR
-315
-475
-372
-520
+710
+380
+767
+425
 R0
 R0
 2

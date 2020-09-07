@@ -117,6 +117,22 @@ to setup-people
   if vinculos? [ make-network ]
 end
 
+to set-esc1
+  set p2-mobilidad-local p2-mobilidad-local / 2
+  set p2-tend-cuarentena p2-tend-cuarentena * 2
+  set p2-med-personales p2-med-personales * 2
+
+end
+
+
+to set-esc2
+  set p2-mobilidad-local p2-mobilidad-local * 2
+  set p2-tend-cuarentena p2-tend-cuarentena / 2
+  set p2-med-personales p2-med-personales / 2
+
+end
+
+
 to infeccion-inicial
   ask n-of p1-infectados-inicial p1s
     [ set infected? true
@@ -675,7 +691,7 @@ p1-poblacion
 p1-poblacion
 50
 500
-200.0
+500.0
 10
 1
 NIL
@@ -788,7 +804,7 @@ prob-contagio
 prob-contagio
 1
 50
-25.0
+10.0
 1
 1
 NIL
@@ -928,8 +944,8 @@ p2-tend-cuarentena
 p2-tend-cuarentena
 0
 50
-10.0
-5
+1.0
+1
 1
 NIL
 HORIZONTAL
@@ -973,7 +989,7 @@ p2-med-personales
 p2-med-personales
 0
 100
-30.0
+5.0
 5
 1
 NIL
@@ -1008,7 +1024,7 @@ p2-mobilidad-local
 p2-mobilidad-local
 0
 1
-0.5
+1.0
 0.1
 1
 NIL
@@ -1059,7 +1075,7 @@ efectividad-mp
 efectividad-mp
 1
 10
-3.0
+2.0
 1
 1
 NIL
@@ -1150,7 +1166,7 @@ p2-poblacion
 p2-poblacion
 0
 500
-200.0
+500.0
 10
 1
 NIL
@@ -1256,6 +1272,40 @@ count p2s
 0
 1
 11
+
+BUTTON
+1023
+17
+1088
+51
+Restringir
+set-esc1
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+1023
+57
+1089
+91
+relajar
+set-esc2
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 # Dispersión espacial y prevención COVID 19 
