@@ -2,7 +2,7 @@
 
 Análisis espacial de COVID19 en Ecuador.
 
-## Modelos Basados en Agentes
+## ABM Modelos Basados en Agentes
 Spatial Agent Based Models to explore the dispersion of #COVID19
 
 ## SEEIR
