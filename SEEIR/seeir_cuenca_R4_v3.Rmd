@@ -1,0 +1,1046 @@
+---
+title: "Modelo SEIR-COVD19 para Cuenca"
+author: |
+  | Daniel Orellana (daniel.orellana@ucuenca.edu.ec)^1^, Andrea Gómez^2^
+  | 1. Universidad de Cuenca, Facultad de Ciencias Agropecuarias, LlactaLAB Ciudades Sustentables
+  | 2. Universidad de Chile, Facultad de Medicina, Escuela de Salud Pública
+date: "2020-07-21"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE, eval=T}
+knitr::opts_chunk$set(echo = TRUE, eval = T)
+
+#La primera vez es necesario tener instalado odin y  devtools antes de iniciar la instalación de squire.
+# Además se necesita tener instalado RTOOLS
+
+# install.packages("odin")
+# install.packages("devtools")
+# devtools::install_github("mrc-ide/squire")
+
+
+options(scipen=999)  
+setwd("G:/My Drive/geo/Ecuador/covid19/SEEIR Cuenca/")
+library(squire)
+library(socialmixr)
+library(plot.matrix)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(lubridate)
+
+# devtools::update_packages("squire")
+```
+
+*trabajo en construcción *
+
+*Documento para discusión*
+
+# Introducción 
+
+En este documento, reportamos los resultados del análisis de escenarios de evolución de COVID19 en Cuenca, Ecuador utilizando el modelo SEIR elaborado por el *MRC Centre for Global Infectious Disease Analysis* del Imperial College of London. La documentación del modelo está disponible en: https://mrc-ide.github.io/global-lmic-reports/parameters.html y el código fuente utilizado se encuentra en https://github.com/mrc-ide/squire
+
+
+El proceso de análisis asume una estructura poblacional en Cuenca proporcional a la de Ecuador (Aproximadamente el 5% en todos los grupos etáreos). El resto de parámetros se mantienen incialmente igual a los originales.
+
+# Estructura del modelo
+
+A continuación se explica la estructura general del modelo, traducida del original.
+
+### Estructura general
+
+```{r figs, out.width = "450px", echo=FALSE, fig.cap="\\label{fig:figs} Estructura general del modelo. Fuente: https://github.com/mrc-ide/squire"}
+
+knitr::include_graphics("resources/Explicit_Healthcare_Model_Structure.JPG")
+  
+```
+
+
+
+Se sigue el modelo original 'squire' original del ICL estructurado por rangos de edad, con las clases de infección divididas en diferentes etapas reflejando la progresión a través de diferentes rutas de severidad de la enfermedad. Estos compartimentos son:
+
+
+* S = Susceptibles  
+* E = Expuestos (Infección latente)  
+* I<sub>Mild</sub> = Infecciones leves (No requieren hospitalización)  
+* I<sub>Case</sub> = Infecciones que requieren hospitalización  
+* I<sub>Hospital</sub> = Hospitalizados (Requieren una cama de hospital)  
+* I<sub>ICU</sub> = UCI (Requiere cama de UCI)  
+* I<sub>Rec</sub> = En recuperación de UCI (Require cama de hospital)  
+* R = Recuperado  
+* D = Fallecido
+
+### Árbol de decisión para capacidad hospitalaria
+
+```{r figs2, echo=FALSE, fig.cap="\\label{fig2:figs} Arbol de decisión de capacidad hospitalaria. Fuente: https://github.com/mrc-ide/squire"}
+
+knitr::include_graphics("resources/Explicit_Healthcare_Oxygen_Decision_Tree.JPG")
+
+```
+
+
+
+
+Dados los datos iniciales de capacidad hospitalaria (camas generales y camas de UCI) y el tiempo primedio que los pacientes pasan en el hospital, el modelo rastrea de forma dinámica en el tiempo las camas generales y de UCI disponibles
+
+Las personas que requieren hospitalización (sea en hospitalización general o en UCI) son asignadas a recibir atención (si hay camas disponibles) o no (si se ha excedido la capacidad hospitalaria). El que un individuo reciba la atención requerida modifica su probabilidad de fallecer.
+
+
+# Modelo para Ecuador
+Se inicia con el modelo base para Ecuador, utilizando los parámetros por defecto del modelo SEIR del ICL para explorar el comportamiento.
+```{r modelo ecuador, eval=F}
+
+
+popec <- get_population("Ecuador",simple_SEIR = F)
+d0 <- as.Date("2020/03/01")
+
+mec1 <- run_explicit_SEEIR_model(population = popec$n, 
+                              contact_matrix_set = cm2 <- get_mixing_matrix("Ecuador"),
+                              time_period = 120,
+                              # R0=3,
+                              # beta_set=0.1,
+                              # replicates = 100,
+                              day_return = T,
+                              seeding_cases = 10
+                              )
+
+
+
+plot(mec1,x_var = "date" , date_0 =d0 )
+plot(mec1, var_select = "infections", x_var = "date" , date_0 =d0 )
+plot(mec1, var_select = "E", x_var = "date" , date_0 =d0 )
+plot(mec1, var_select = c("deaths"), x_var = "date" , date_0 =d0, summarise = T)
+plot(mec1, var_select = "D", x_var = "date" , date_0 =d0, summarise = T)
+
+
+```
+
+Los resultados del modelo no están calibrados pero dan un punto de inicio para comprender la dinámica de la enfermedad.
+
+El modelo utiliza varios parámetros 
+
+# Modelo para Cuenca
+A partir del modelo original del ICL, se ha generado un modelo específico para Cuenca (Ecuador). El modelo base requiere inicialmente dos datos de entrada: La estructura poblacional por edades y la matriz de contactos. El resto de parámetros se mantienen inicialmente igual a los originales. Estos parámetros incluyen el número reproductivo básico R0, las matrices de contactos, la duración en cada etapa de la enfermedad, entre otros.
+
+El modelo base será posteriormente calibrado utilizando el número de fallecimientos.
+
+
+
+## Matriz de contactos
+
+Uno de los elementos clave del modelo SEIR del ICL es la "matriz de contactos". Esta matriz representa el número promedio de interacciones entre personas por rango de edad. Ya que no existe un estudio para este tipo de matrices en Ecuador o Cuenca, se explorarán tres posibles matrices a ser utilizadas: 1. La matriz dentro del paquete "squire", 2. Una matriz generada en una investigación en Perú . 3. Una matriz del proyecto "polymod" de España
+
+
+```{r Explorar matrices de interacción, eval=T}
+
+
+# 1 Matriz de contactos desde el paquete squire
+
+cm1 <- get_mixing_matrix("Ecuador")
+
+plot(cm1,
+     fmt.cell='%.2f',
+     cex=0.7,
+     fmt.key ='%.2f',
+     breaks = range(0:2),
+     col=viridis::viridis(10),
+     main="Matriz de Contactos por defecto de Ecuador",
+     sub="Datos del paquete 'squire'"
+     )
+
+
+
+# 2 Matriz de contactos de Perú
+# peru_survey <- get_survey("https://doi.org/10.5281/zenodo.1095664")
+# saveRDS(peru_survey, "peru.rds") #save for future use
+
+peru_survey <- readRDS("precomputed/peru.rds")
+
+cmt <- contact_matrix(survey=peru_survey,
+                     survey.pop="Peru",
+                     age.limits = seq(0,80,5),
+                     bootstrap=1000,
+                     split = T,
+                     symmetric=T,
+                     )
+
+cm2 <- (cmt$matrix)
+colnames(cm2) <- cmt$participants$age.group
+rownames(cm2) <- cmt$participants$age.group
+
+
+plot(cm2,
+     fmt.cell='%.2f', 
+     cex=0.7, 
+     fmt.key ='%.2f', 
+     breaks = range(0:2),
+     col=viridis::viridis(10),
+     main="Matriz de Contactos de Perú",
+     sub= "Grijalva et al. 2020, https://doi.org/10.5281/zenodo.1095664"
+     )
+
+
+# 3 Matriz de contactos de España
+cm3 <- get_mixing_matrix("Spain")
+
+
+
+plot(cm3,
+     fmt.cell='%.2f', 
+     cex=0.7, 
+     fmt.key ='%.2f', 
+     breaks = range(0:2),
+     col=viridis::viridis(10),
+     main="Matriz de Contactos por defecto de España"
+     )
+
+
+
+```
+
+Los resultados sugieren que la matriz de Ecuador puede ser efectivamente representativa de las interacciones diarias entre los grupos de edad
+
+```{r seleccion de matriz }
+#selecciona una matriz y calcula la matriz simétrica utilizando el valor más alto de cada interacción 
+cms <- cm1
+
+cm <- pmax(cms, t(cms))
+
+plot(cm,
+     fmt.cell='%.2f', 
+     cex=0.7, 
+     fmt.key ='%.2f', 
+     breaks = range(0:2),
+     col=viridis::viridis(10),
+     main="Matriz de Contactos seleccionada (simétrica)"
+     )
+```
+
+## Estructura poblacional y capacidad hospitalaria.
+En el modelo asumimos en primer lugar una estructura poblacional en Cuenca similar a la de Ecuador, según los datos de proyección del INEC. Para el cálculo se asume que Cuenca tiene aproximadamente el 3.6% de la población de Ecuador en todos los grupos etáreos (INEC 2020).
+
+Por otro lado, se reporta que en Cuenca exixten 80 camas de hospitalización y 32 camas de UCI dedicadas a pacientes de COVID19.
+
+```{r datos cantonales, eval=T}
+
+# Población de Cuenca por rango de edad calculada como una proporcion de la población nacional
+
+
+pop <- get_population("Ecuador") #estructura poblacional de Ecuador en rangos de 5 años
+pobc2020 <-pos.cue$canton_poblacion[1]
+
+pobcue <- as.integer(pop$n/sum(pop$n) * pobc2020)
+
+
+#capacidad hospitalaria
+hospbed = 80 
+ucibed = 32
+
+```
+
+## Escenario Base (sin medidas de restricción, sin calibración)
+
+El modelo base asume que no se han implementado medidas de restricción de la movilidad y el virus ha circulado a su mayor capacidad. Por lo tanto la probabilidad de contactos entre grupos etáreos se mantiene.
+
+```{r modelo base, eval=T}
+
+#modelo base
+
+# fecha asumida de inicio, solamente para la representación gráfica
+d0 <- as.Date("2020-03-14")
+
+mb <- run_explicit_SEEIR_model(population = as.integer(pobcue), 
+                              contact_matrix_set = cm,
+                              time_period = 90,
+                              # R0=3,
+                              # beta_set=0.1,
+                              # replicates = 100,
+                              day_return = T,
+                              hosp_bed_capacity = hospbed, 
+                              ICU_bed_capacity = ucibed,
+                              seeding_cases = 10
+                              )
+
+
+plot(mb, var_select = "infections", x_var = "date" , date_0 =d0 )
+plot(mb, var_select = "E", x_var = "date" , date_0 =d0 )
+plot(mb, var_select = "deaths", x_var = "date" , date_0 =d0, summarise = T)
+plot(mb, var_select = "D", x_var = "date" , date_0 =d0, summarise = T)
+plot(mb, var_select = c("E","IMild"), x_var = "date" , date_0 =d0)
+
+
+
+# write.csv(format_output(mb),file = "seeir_cuenca_base.csv")
+
+```
+El resultado, incluso en el escenario base, sin restricciones, predice un pico de aproximadamente 150mil contagiados simulatáneos para mediados de Mayo. Según un estudio del GAD Municipal de Cuenca, se calculó una tasa de prevalencia del 8% que representaría aproximadamente 38000 contagiados el 17 de mayo de 2020.
+
+Este escenario es poco probable.
+
+
+## Escenario actual (con medidas de movilidad, sin calibración)
+
+El escenario actual se genera a partir de un modelo tomando en cuenta el comportamiento observado de movilidad según los datos de MINT1EL / Telefónica.
+
+```{r leer datos de movilidad }
+# Leer datos de movilidad
+
+mov <- read.csv("G:/My Drive/geo/Ecuador/covid19/mintel/movilidad_procesado/canmov_semanal.csv", 
+                colClasses = c("character","numeric","Date","numeric")) %>%
+  filter(dpa_canton=="0101") %>%
+  mutate(redmov=round(varimovw + 1,3),
+         ttmov = (fecha - d0)) %>%
+  select(ttmov,
+         fecha,
+         redmov) 
+
+mov <- rbind(data.frame(fecha=as.Date("2020-03-14"),ttmov = 0, redmov = 1), mov)
+mov
+
+# ggplot(data=mov, aes(x=date, y=mov,group=1)) +
+#   geom_line()
+
+ggplot(data=mov, aes(x=fecha, y=redmov))+
+  geom_line(aes(col="Reducción relativa"))+
+  geom_point(aes(y=redmov)) + 
+  geom_text(aes(label=round(redmov,2),hjust=0, vjust=-1), size=3.5) +
+  stat_smooth(method = "lm",data = mov[-(1:8),],fullrange = F)+
+  labs(title="Variación de la movilidad", x="Fecha", y="Proporción relativa")  +
+  scale_x_date(date_breaks = "1 week", 
+               date_labels = "%b %d", 
+               date_minor_breaks = "1 week",
+               limits = c(as.Date("2020/03/14"),as.Date("2020/06/22"))) +
+  scale_y_continuous(breaks = seq(0,1,0.1)) +
+  theme(axis.text.x = element_text(angle = 90),
+        legend.position = "none"
+        )
+
+
+
+
+```
+
+La movilidad en Cuenca se redujo a un 30% en la semana posterior a la implementación de las medidas de restricción. A partir de entonces, ha tenido un aumento gradual semana a semana. Para inicios de Junio, la movilidad se había recuperado a un 64% de lo normal.
+
+A partir de los datos de movilidad se estiman cambios proporcionales en las matrices de interacción
+
+```{r set de matrices de contactos }
+#lista de matrices de interacción para cada nivel de reducción
+# Se utiliza solamente 4 puntos en el tiempo
+mov1 <- mov[c(1,3,6,9,14),]
+
+cmset <- lapply(mov1$redmov, function(x) cm*x)
+
+# plot(cmset[1],
+#      fmt.cell='%.2f', 
+#      cex=0.7, 
+#      fmt.key ='%.2f', 
+#      breaks = range(0:2),
+#      col=viridis::viridis(10),
+#      main="Matriz de Contactos por defecto de España (simétrica)"
+#      )
+
+
+
+```
+
+Y se genera un modelo con estas matrices
+
+```{r, eval=T}
+
+
+ma <- run_explicit_SEEIR_model(population = pobcue,
+                               dt = 1,
+                              tt_contact_matrix = mov1$ttmov,
+                              contact_matrix_set = cmset,
+                              time_period = 350,
+                              replicates = 20,
+                              day_return = T
+                              )
+
+
+plot(ma, var_select = "infections", x_var = "date" , date_0 =d0 )
+plot(ma, var_select = "E", x_var = "date" , date_0 =d0 )
+plot(ma, var_select = "R", x_var = "date" , date_0 =d0 )
+plot(ma, var_select = "D", x_var = "t" , date_0 =d0 )
+
+
+
+```
+
+Estos resultados reflejan mejor lo observado. Sin embargo, al parecer, la curva tiene un desplazamiento temporal importante por lo que será necesario calibrar el modelo.
+
+
+## Escenario base calibrado (sin medidas de restricción, calibrado)
+
+El siguiente paso es calibrar el modelo a partir de la serie de datos de mortalidad.
+
+En primer lugar se recuperan los datos diarios de mortalidad y casos reportados para generar un dataset de calibración.
+
+```{r dataset de calibracion}
+
+#casos positivos
+positivos <- read.csv(file = "G:/My Drive/geo/Ecuador/covid19/andrab/cantones.inec.csv", 
+                      colClasses = c("character",
+                                     "character",
+                                     "numeric",
+                                     "character",
+                                     "character",
+                                     "numeric",
+                                     "numeric",
+                                     "numeric",
+                                     "numeric",
+                                     "character"), 
+                      fileEncoding ="UTF8")
+
+
+pos.cue <- positivos %>%
+  filter(inec_canton_id=="0101") %>%
+  mutate(fecha=as.Date(created_at, format="%d/%m/%y"))%>%
+    select(canton_id=inec_canton_id,
+           fecha,
+           casos=total)
+
+
+# pos.long <- pos.long %>% 
+#   mutate(lat = as.numeric(as.character(lat)),
+#          lng = as.numeric(as.character(lng)),
+#            casos = as.numeric(as.character(value)),
+#          fecha = as.Date(as.character(gsub("\\.","/",substr(pos.long$variable,2,10))),format = "%d/%m/%y"),
+#          nuevos = casos - lag(casos),
+#   )
+
+
+#fallecimientos
+falle <-read.csv("../municipio_cuenca/fallecidos Cementerios.csv",) %>%
+  janitor::clean_names()%>%
+  select(fecha,confirmado_covid,sospecha_covid,no_covid)%>%
+  mutate(fecha=as.Date(falle$fecha,format="%d/%m/%y"),
+         total_covid=confirmado_covid + sospecha_covid)
+  
+falle
+
+#dataframe de calibración
+calib.df <- merge(falle, pos.cue, by.x = "fecha",by.y="fecha") %>%
+  select(date=fecha,
+         deaths=total_covid,
+         cases=casos)  %>%
+  mutate(deaths_cum =cumsum(deaths),
+         cases_cum =(cases))
+
+ggplot(calib.df, aes(x = date)) +
+  geom_line(aes(y=cases, col="Casos Diarios"))+
+  geom_point(aes(y=deaths, col="muertes")) +
+  labs(title="Datos de calibración", caption = "Los casos positivos provienen de las infografías del MSP, extraidos y proesados por Andrés Robalino. Los datos de fallecimientos fueron proporcionados por David Acurio"
+       )
+
+ggplot(calib.df, aes(x = date)) +
+  geom_line(aes(y=cases, col="Casos Diarios"))+
+  geom_point(aes(y=deaths, col="muertes")) +
+  labs(title="Datos de calibración", caption = "Los casos positivos provienen de las infografías del MSP, extraidos y proesados por Andrés Robalino. Los datos de fallecimientos fueron proporcionados por David Acurio"
+       )
+
+  
+```
+
+
+Se calibra primero el modelo base, sin tomar en cuenta las medidas de restricción. La calibración realiza un ajuste del R0 y la fecha inicial del proceso infeccioso a partir de los datos observados de casos positivos y fallecimientos. Se explorarán los siguientes rangos:
+- R0 [1.5:4] 
+- fecha inicial ["2020-02-15":"2020-03-10"]
+
+```{r eval=FALSE, include=TRUE}
+
+### Esto no se ejecuta durante la compilación del documento
+future::plan(future::multiprocess())
+
+# Se calibra el modelo de línea base para representar que hubiese pasado si no se tomaran medidas
+cal1 <- calibrate(
+      data = calib.df,
+      R0_min = 1.5,
+      R0_max = 4,
+      R0_step = 0.5,
+      first_start_date = "2020-02-15",
+      last_start_date = "2020-03-10",
+      day_step = 1,
+      replicates = 10,
+      n_particles = 20,
+      baseline_contact_matrix=cm,
+      # date_contact_matrix_set_change = mov$date[-1],
+      # contact_matrix_set = cmset[-1],
+      population=pobcue,
+      baseline_hosp_bed_capacity=hospbed,
+      baseline_ICU_bed_capacity = ucibed,
+      dt=1
+    )
+
+ # saveRDS(cal1,"precomputed/cal1.rds") #save for future use
+
+```
+
+
+```{r}
+
+#Modelo de línea base
+
+cal1 <- readRDS("precomputed/cal1.rds")
+
+cal1
+
+plot(cal1$scan_results, what = "probability")
+
+#fecha más probable de inicio
+d0calib1 <- cal1$scan_results$y[
+  which(cal1$scan_results$renorm_mat_LL == max(cal1$scan_results$renorm_mat_LL), 
+        arr.ind = TRUE)[2]]
+
+R0calib1 <- cal1$scan_results$x[
+  which(cal1$scan_results$renorm_mat_LL == max(cal1$scan_results$renorm_mat_LL), 
+        arr.ind = TRUE)[1]]
+
+
+plot(cal1, var_select = c("E", "IMild"), date_0 = max(calib.df$date), x_var = "date")
+plot(cal1, var_select = c("deaths"), date_0 = max(calib.df$date), x_var = "date")
+plot(cal1, var_select = c("D"), date_0 = max(calib.df$date), x_var = "date")
+
+plot(cal1, particle_fit = TRUE)
+
+# plot(cal1$scan_results)
+# plot(cal1$scan_results, what = "probability")
+
+
+```
+
+Este modelo representa el escenario en el que no se hubiesen tomado medidas de restricción de la movilidad. En este caso se hubiese dado un pico de mortalidad de aproximadamente 250 muertes por día en las últimas semanas de Mayo. Se estima que la fecha probable de inicio fue `r d0calib1` y el R0 más probable es `r R0calib1`.
+
+
+Este modelo se proyecta a 300 días para comprender cual hubiese sido la dinámica del escenario sin mitigación hacia el futuro.
+
+```{r}
+# Se proyecta este modelo 300 días
+
+
+cal1p <- projections(r = cal1, time_period = 90)
+
+plot(cal1p, var_select = c("E", "IMild"), date_0 = max(calib.df$date), x_var = "date")
+plot(cal1p, "infections", date_0 = max(calib.df$date), x_var = "date")
+plot(cal1p, "deaths", date_0 = max(calib.df$date), x_var = "date")
+plot(cal1p, "D", date_0 = max(calib.df$date), x_var = "date")
+
+plot(cal1p, particle_fit = TRUE)
+
+max(format_output(cal1p, var_select = "D")$y)
+
+```
+Una vez calibrado el modelo  estima que si no se hubiesen tomado medidas de restricción de la movilidad, se hubiese tenido un pico de 250 muertes diarias a mediados de Mayo, y la enfermedad no se hubiese estabilizado hasta finales de julio con un saldo de 9000 muertes.
+
+
+## Escenario actual calibrado (con medidas, con calibración)
+A continuación se calibra el modelo tomando en cuenta las medidas de restricción de movilidad. Esta restricción se refleja como un cambio en la matriz de contactos que es proporcional al cambio de movilidad. Esta es una suposición simple pero efectiva, y es comunmente utilizada en modelización. 
+
+```{r calibracion con medidas , eval=F }
+
+# esta parte no se ejecuta durante la compilación del cocumento
+
+# los datos de movilidad deben corresponder al período de datos de calibración
+
+movcal <- mov %>% filter(fecha < max(calib.df$date))
+
+# la matriz de contactos cambia en proporción de la movilidad
+cmset2 <- lapply(movcal$redmov, function(x) cm*x)
+
+cal2 <- calibrate(
+      data = calib.df,
+      R0_min = 2,
+      R0_max = 3,
+      R0_step = 0.5,
+      first_start_date = "2020-01-15",
+      last_start_date = "2020-02-15",
+      day_step = 1,
+      replicates = 10,
+      n_particles = 20,
+      reporting_fraction=0.66, #se estima que 1/3 de las muertes no están siendo reportadas
+      baseline_contact_matrix=cm,
+      date_contact_matrix_set_change = movcal$fecha,
+      contact_matrix_set = cmset2,
+      population=pobcue,
+      baseline_hosp_bed_capacity=hospbed,
+      baseline_ICU_bed_capacity = ucibed,
+      dt=1
+    )
+
+
+
+ # saveRDS(cal2,"precomputed/cal2.rds") #save for future use
+
+
+```
+
+```{r }
+#Modelo escenario actual calibrado
+
+cal2 <- readRDS("precomputed/cal2.rds")
+
+plot(cal2, var_select = c("E", "IMild"), date_0 = max(calib.df$date), x_var = "date")
+plot(cal2, var_select = c("deaths"), date_0 = max(calib.df$date), x_var = "date")
+plot(cal2, var_select = c("D"), date_0 = max(calib.df$date), x_var = "date")
+
+plot(cal2, particle_fit = TRUE)
+
+plot(cal2$scan_results, what = "likelihood",log = T)
+
+plot(cal2$scan_results, what = "probability")
+
+plot(t(cal2$scan_results$mat_log_ll),
+     fmt.cell='%.2f',
+     cex=0.7,
+     fmt.key ='%.1f',
+     col=viridis::viridis(20),
+     sub="Datos del paquete 'squire'"
+     )
+
+#fecha más probable de inicio
+d0cal2 <- cal2$scan_results$y[
+  which(cal2$scan_results$renorm_mat_LL == max(cal2$scan_results$renorm_mat_LL), 
+        arr.ind = TRUE)[2]]
+
+R0cal2 <- cal2$scan_results$x[
+  which(cal2$scan_results$renorm_mat_LL == max(cal2$scan_results$renorm_mat_LL), 
+        arr.ind = TRUE)[1]]
+
+
+plot(cal2, var_select = c("E", "IMild"), date_0 = max(calib.df$date), x_var = "date")
+plot(cal2, var_select = c("deaths"), date_0 = max(calib.df$date), x_var = "date")
+plot(cal2, var_select = c("D"), date_0 = max(calib.df$date), x_var = "date")
+plot(cal2, var_select = c("R"), date_0 = max(calib.df$date), x_var = "date")
+
+plot(cal2, particle_fit = TRUE)
+
+```
+
+Este modelo predice que la fecha de inicio más probable es el `r d0cal2`, y el R0 más probable = `r R0cal2`. 
+
+El ajuste es parcialmente adecuado 
+
+#### Incluir el effect size de movilidad
+
+se vuelve a calibrar el modelo con un parámetro más de exploración que es el effect size de la movilidad
+
+```{r calibracion 3 con medidas y effect size , eval=F }
+
+# esta parte no se ejecuta durante la compilación del cocumento
+
+# los datos de movilidad deben corresponder al período de datos de calibración
+
+movcal <- mov %>% filter(fecha < max(calib.df$date))
+
+cmset2 <- lapply(movcal$redmov, function(x) cm*x)
+
+cal3 <- calibrate(
+      data = calib.df,
+      R0_min = 2,
+      R0_max = 4,
+      R0_step = 0.5,
+      first_start_date = "2020-01-15",
+      last_start_date = "2020-03-1",
+      day_step = 1,
+      Meff_min = 1,
+      Meff_max = 3,
+      Meff_step = 0.5,
+      replicates = 10,
+      n_particles = 30,
+      reporting_fraction=0.66, #se estima que 1/3 de las muertes no están siendo reportadas
+      baseline_contact_matrix=cm,
+      date_contact_matrix_set_change = movcal$fecha,
+      contact_matrix_set = cmset2,
+      population=pobcue,
+      baseline_hosp_bed_capacity=hospbed,
+      baseline_ICU_bed_capacity = ucibed,
+      dt=1
+    )
+
+ # saveRDS(cal3,"precomputed/cal3.rds") #save for future use
+
+```
+
+```{r}
+
+cal3 <- readRDS("precomputed/cal3.rds")
+
+plot(cal3, "deaths", date_0 = max(calib.df$date), x_var = "date")
+
+plot(cal3, "infections", date_0 = max(calib.df$date), x_var = "date")
+plot(cal3, var_select = c("E", "n_E2_I"), date_0 = max(calib.df$date), x_var = "date")
+plot(cal3, var_select = c("E", "R"), date_0 = max(calib.df$date), x_var = "date")
+
+plot(cal3, particle_fit = TRUE)
+
+plot(cal3$scan_results, show=c(1,2),what = "probability")
+plot(cal3$scan_results, show=c(1,3),what = "probability")
+plot(cal3$scan_results, show=c(3,2),what = "probability")
+plot(cal3$scan_results, show=c(3,2),what = "likelihood")
+
+
+```
+Aunque el modelo ha mejorado, sobre estima el número de muertes en la parte final del período de calibración.
+
+
+#### Caibración por rangos de edad
+Para mejorar el modelo, se asume que la movilidad no se recupera de forma homogénea en todos los rangos de edad, sino principalmente en la población joven y adulta (20 - 65 años). Para esto, las interacciones personales en los rangos de edad proporcionales a la movilidad se mantienen en el punto más bajo (semana 3) para menores de edad y tercera edad, y para el resto de la población evoluciona proporcionalmente a la movilidad 
+
+**en desarrollo**
+
+```{r eval=FALSE, include=FALSE}
+
+# los datos de movilidad deben corresponder al período de datos de calibración
+
+movcal <- mov %>% filter(fecha < max(calib.df$date))
+
+#Primero la matriz cambia para todos los rangos de edad
+cmset3 <- lapply(movcal$redmov, function(x) cm*x)
+
+
+cmset3 
+for (i in 4:12){
+    cmset3[[i]][1:3,] <-  cmset3[[3]][1:3,]
+    cmset3[[i]][,1:3] <-  cmset3[[3]][,1:3]
+    cmset3[[i]][14:16,] <-  cmset3[[3]][14:16,]    
+    cmset3[[i]][,14:16] <-  cmset3[[3]][,14:16]
+    }
+
+dif <-cmset3[[12]]- cmset3[[3]] 
+
+plot(dif,
+     fmt.cell='%.2f',
+     cex=0.7,
+     fmt.key ='%.2f',
+     breaks = range(0:2),
+     col=viridis::viridis(10),
+     main="Matriz de contactos",
+     sub="Diferencias de probabilidad de contacto entre semana 12 y semana 3"
+     )
+
+cal4 <- calibrate(
+      data = calib.df,
+      R0_min = 2,
+      R0_max = 4,
+      R0_step = 0.5,
+      first_start_date = "2020-01-15",
+      last_start_date = "2020-03-1",
+      day_step = 1,
+      Meff_min = 1,
+      Meff_max = 3,
+      Meff_step = 0.5,
+      replicates = 10,
+      n_particles = 30,
+      reporting_fraction=0., #se estima que 1/3 de las muertes no están siendo reportadas
+      baseline_contact_matrix=cm,
+      date_contact_matrix_set_change = movcal$fecha,
+      contact_matrix_set = cmset3,
+      population=pobcue,
+      baseline_hosp_bed_capacity=hospbed,
+      baseline_ICU_bed_capacity = ucibed,
+      dt=1
+    )
+
+
+ # saveRDS(cal4,"precomputed/cal4.rds") #save for future use
+
+
+```
+
+```{r}
+
+cal4 <- readRDS("precomputed/cal4.rds")
+
+plot(cal4, "deaths", date_0 = max(calib.df$date), x_var = "date")
+plot(cal4, "D", date_0 = max(calib.df$date), x_var = "date")
+plot(cal4, var_select = c("E","R"), date_0 = max(calib.df$date), x_var = "date")
+
+plot(cal4, "hospital_demand", date_0 = max(calib.df$date), x_var = "date")
+
+plot(cal4, particle_fit = TRUE)
+
+plot(cal4$scan_results, show = c(1,2), what="probability", log = F)
+
+plot(cal4$scan_results, what = "probability")
+
+```
+
+#### Otros modelos
+```{r eval=FALSE, include=FALSE}
+
+cal4.1 <- calibrate(
+      data = calib.df,
+      R0_min = 2,
+      R0_max = 4,
+      R0_step = 0.25,
+      first_start_date = "2020-01-15",
+      last_start_date = "2020-03-5",
+      day_step = 1,
+      Meff_min = 1,
+      Meff_max = 3,
+      Meff_step = 0.5,
+      replicates = 100,
+      n_particles = 20,
+      reporting_fraction=0.9,
+      baseline_contact_matrix=cm,
+      date_contact_matrix_set_change = mov$fecha,
+      contact_matrix_set = cmset3,
+      population=pobcue,
+      baseline_hosp_bed_capacity=hospbed,
+      baseline_ICU_bed_capacity = ucibed,
+      dt=1
+    )
+
+plot(cal4.1, "deaths", date_0 = max(calib.df$date), x_var = "date")
+plot(cal4.1, "infections", date_0 = max(calib.df$date), x_var = "date")
+plot(cal4.1, "R", date_0 = max(calib.df$date), x_var = "date")
+
+
+plot(cal4.1, particle_fit = TRUE)
+
+plot(cal4$scan_results)
+
+plot(cal4$scan_results, what = "probability")
+```
+
+### Calibración de R0
+
+```{r eval=FALSE, include=TRUE}
+
+##Esta sección no se genera 
+
+cal5 <- calibrate(
+      data = calib.df,
+      R0_min = 2,
+      R0_max = 4,
+      R0_step = 0.5,
+      first_start_date = "2020-01-01",
+      last_start_date = "2020-03-01",
+      day_step = 1,
+      Meff_min = 0.5,
+      Meff_max = 2,
+      Meff_step = 0.5,
+      replicates = 20,
+      n_particles = 40,
+      reporting_fraction=0.66,
+      baseline_contact_matrix=cm,
+      # date_contact_matrix_set_change = mov$date[-1],
+      # contact_matrix_set = cmset[-1],
+      R0_change = mov$red,
+      date_R0_change=mov$fecha,
+      population=pobcue,
+      baseline_hosp_bed_capacity=hospbed,
+      baseline_ICU_bed_capacity = ucibed,
+      dt=1
+    )
+
+# saveRDS(cal5, "precomputed/cal5.rds") #save for future use
+
+
+```
+
+
+```{r}
+
+
+cal5 <- readRDS("precomputed/cal5.rds")
+
+plot(cal5, "deaths", date_0 = max(calib.df$date), x_var = "date")
+plot(cal5, "D", date_0 = max(calib.df$date), x_var = "date")
+plot(cal5, "infections", date_0 = max(calib.df$date), x_var = "date")
+plot(cal5, "IMild", date_0 = max(calib.df$date), x_var = "date", )
+plot(cal5, "E", date_0 = max(calib.df$date), x_var = "date", )
+plot(cal5, "R", date_0 = max(calib.df$date), x_var = "date", )
+
+
+plot(cal5, particle_fit = TRUE)
+
+
+```
+
+Este modelo parece reflejar mejor lo observado.
+
+A continuación se estima la fecha más probable de inicio.
+
+```{r}
+plot(cal5$scan_results)
+plot(cal5$scan_results, show=c(1,2),what = "probability")
+plot(cal5$scan_results, show=c(1,2),what = "likelihood")
+
+plot(cal5$scan_results, show=c(3,2),what = "probability")
+plot(cal5$scan_results, show=c(3,2),what = "likelihood")
+
+plot(cal5$scan_results, show=c(1,3),what = "probability")
+plot(cal5$scan_results, show=c(1,3),what = "likelihood")
+
+#fecha más probable de inicio
+d0cal5 <- cal5$scan_results$y[
+  which(cal5$scan_results$renorm_mat_LL == max(cal5$scan_results$renorm_mat_LL), 
+        arr.ind = TRUE)[2]]
+
+R0cal5 <- cal5$scan_results$x[
+  which(cal5$scan_results$renorm_mat_LL == max(cal5$scan_results$renorm_mat_LL), 
+        arr.ind = TRUE)[1]]
+
+
+```
+
+La fecha más probable de inicio del proceso infeccioso en Cuenca es el 18 de Febrero, con un R0 de 3.25.
+
+
+### Proyecciones
+
+
+Una vez calibrado el modelo, se realizan proyecciones a 300 días
+
+```{r, eval =F}
+
+### Esto no se ejecuta durante la compilación del documento
+
+pred5 <- projections(r = cal5,time_period = 300)
+
+# saveRDS(pred5,"precomputed/pred5.rds") #save for future use
+
+
+
+```
+
+```{r}
+
+pred5 <- readRDS("precomputed/pred5.rds")
+
+plot(pred5, "infections",date_0 = max(calib.df$date), x_var = "date")+
+    ggplot2::xlim(min(calib.df$date),as.Date("2020-08-30"))
+
+plot(pred5, "deaths",date_0 = max(calib.df$date), x_var = "date")+
+    ggplot2::xlim(min(calib.df$date),as.Date("2020-08-30"))
+
+plot(pred5, "D",date_0 = max(calib.df$date), x_var = "date")+
+    ggplot2::xlim(min(calib.df$date),as.Date("2020-10-30"))
+
+# plot(pred1, "D",date_0 = max(calib.df$date), x_var = "date")+
+#     ggplot2::xlim(min(calib.df$date),as.Date("2020-08-30")) +
+#   ggplot2::ylim(c(0,1000))
+
+
+```
+
+El modelo predice que el pico de infección estaría a principios de julio si se mantienen las condiciones actuales. Esto se reflejaría en un pico de mortalidad en la tercera semana de julio, seguida de un decensi significativo.
+
+```{r}
+plot(pred5, var_select = c("ICU_occupancy", "ICU_demand"),date_0 = max(calib.df$date), x_var = "date")+
+    ggplot2::xlim(min(calib.df$date),as.Date("2020-08-30")) +
+  ggplot2::ylim(c(0,200))
+
+
+plot(pred5, var_select = c("hospital_occupancy", "hospital_demand"),date_0 = max(calib.df$date), x_var = "date")+
+    ggplot2::xlim(min(calib.df$date),as.Date("2020-08-30")) +
+  ggplot2::ylim(c(0,1300))
+```
+
+La demanda de UCI sería de al rededor de 80 unidades durante el pico de Julio. La capacidad hospitalaria estaría fuertemente sobrepasada.
+
+
+## Proyecciones
+
+*En desarrollo*
+```{r eval=T, include=T}
+
+# Proyección modificando el R0 a través de intervenciones
+
+proj5 <- projections(r = pred5, R0_change = c(1, 0.5), tt_R0 = c(0,10))
+
+
+ggproj <- projection_plotting(r_list = list(pred5,proj5),
+                    scenarios = c("Actual","Mitigation"),
+                    var_select = c("ICU_occupancy", "ICU_demand"),
+                    x_var = "date",
+                    date_0 = max(calib.df$date),
+                    add_parms_to_scenarios = TRUE,ci = FALSE,summarise = TRUE)
+  
+
+ggproj+ ggplot2::geom_hline(yintercept = pred5$parameters$ICU_bed_capacity) +
+  scale_x_date(date_breaks = "1 month", 
+               date_labels = "%b %d", 
+               date_minor_breaks = "1 day",
+               limits = c(as.Date("2020/03/1"),as.Date("2020/08/22")))
+
+
+projection_plotting(r_list = list(pred5,proj5),
+                    scenarios = c("Actual","Mitigación"),
+                    var_select = c("D"),
+                    x_var = "date",
+                    date_0 = max(calib.df$date),
+                    add_parms_to_scenarios = TRUE,ci = FALSE,summarise = TRUE)
+
+
+```
+El modelo predice que de implementarse una estrategia de mitigación el día 18 de Julio que reduzca a la mitad la transmisión de la enfermedad, se reduciría la presión sobre la capacidad de UCI y el número total de muertes disminuiría de más de 6000 a menos de 2000.
+
+
+### Exploración de la capacidad hospitalaria
+
+** EN DESARROLLO
+```{r, eval=F}
+
+proj2 <- projections(r = pred1, 
+                     R0_change = c(1, 0.5), 
+                     tt_R0 = c(0,20), 
+                     ICU_bed_capacity_change = c(1,2),
+                     tt_ICU_beds= c(0,30))
+
+
+ggproj <- projection_plotting(r_list = list(pred1,proj2),
+                    scenarios = c("Actual","Mitigation"),
+                    var_select = c("ICU_occupancy", "ICU_demand"),
+                    x_var = "date",
+                    date_0 = max(calib.df$date),
+                    add_parms_to_scenarios = TRUE,ci = FALSE,summarise = TRUE)  
+
+ggproj+ ggplot2::geom_hline(yintercept = pred1$parameters$ICU_bed_capacity)
+
+
+library(patchwork)
+
+d1 <- max(calib.df$date)
+  
+deaths <- format_output(x = pred1, var_select = "deaths") %>%
+  mutate(replicate = factor(replicate))
+
+deaths$fecha <- deaths$t+ d1
+
+a <- ggplot(deaths, aes(x = fecha, y = y, col = replicate)) +
+  geom_line() + ylab("Muertes diarias")
+
+infections <- format_output(x = pred1, var_select = "infections") %>%
+  mutate(replicate = factor(replicate))
+
+infections$fecha <- infections$t+ d1
+
+b <- ggplot(infections, aes(x = fecha, y = y, col = replicate)) +
+  geom_line() + ylab("Contagios diarios")
+
+hosp_bed <- format_output(x = pred1, var_select = "hospital_occupancy") %>%
+  mutate(replicate = factor(replicate))
+
+hosp_bed$fecha <- hosp_bed$t+ d1
+
+
+c <- ggplot(hosp_bed, aes(x = fecha, y = y, col = replicate)) +
+  geom_line() + ylab("Ocupación hospitalización")
+
+ICU_bed <- format_output(x = pred1, var_select = "ICU_occupancy") %>%
+  mutate(replicate = factor(replicate))
+
+ICU_bed$fecha <- ICU_bed$t+ d1
+
+d <- ggplot(ICU_bed, aes(x = fecha, y = y, col = replicate)) +
+  geom_line() + ylab("Ocupación UCI")
+
+z <- a + b + c + d + plot_layout(guides = 'collect')
+
+
+```
+
