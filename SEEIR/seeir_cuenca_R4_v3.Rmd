@@ -387,7 +387,7 @@ En primer lugar se recuperan los datos diarios de mortalidad y casos reportados 
 ```{r dataset de calibracion}
 
 #casos positivos
-positivos <- read.csv(file = "G:/My Drive/geo/Ecuador/covid19/andrab/cantones.inec.csv", 
+positivos <- read.csv(file = "inputs/cantones.inec.csv", 
                       colClasses = c("character",
                                      "character",
                                      "numeric",
@@ -419,7 +419,7 @@ pos.cue <- positivos %>%
 
 
 #fallecimientos
-falle <-read.csv("../municipio_cuenca/fallecidos Cementerios.csv",) %>%
+falle <-read.csv("inputs/fallecidos Cementerios.csv",) %>%
   janitor::clean_names()%>%
   select(fecha,confirmado_covid,sospecha_covid,no_covid)%>%
   mutate(fecha=as.Date(falle$fecha,format="%d/%m/%y"),
@@ -444,7 +444,7 @@ ggplot(calib.df, aes(x = date)) +
 ggplot(calib.df, aes(x = date)) +
   geom_line(aes(y=cases, col="Casos Diarios"))+
   geom_point(aes(y=deaths, col="muertes")) +
-  labs(title="Datos de calibración", caption = "Los casos positivos provienen de las infografías del MSP, extraidos y proesados por Andrés Robalino. Los datos de fallecimientos fueron proporcionados por David Acurio"
+  labs(title="Datos de calibración", caption = "Los casos positivos provienen de las infografías del MSP, extraidos y proesados por Andrés Robalino. Los datos de fallecimientos fueron proporcionados por el Municipio de Cuenca"
        )
 
   
